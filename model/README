@@ -1,0 +1,8 @@
+SimPy models for a PCB(SMT) manufacturing line
+
+
+Requirements:
+	Python 3
+	SimPy (A discrete-event simulation library)
+		See: http://simpy.readthedocs.io/en/latest/index.html
+
