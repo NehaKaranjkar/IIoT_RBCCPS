@@ -1,86 +1,109 @@
 # ScreenPrinter.py
 #
-#   The ScreenPrinter waits until there is a PCB at its input,
-#   then performs printing, one PCB at a time.
+#   The ScreenPrinter performs printing, one PCB at a time.
 #   Each PCB consumes a certain amount of solder and adhesive
-#   and incurs a certain amount of delay depending on the type of the PCB.
+#   and incurs a certain amount of delay depending on the PCB's type_ID.
 #   When the solder or adhesive levels falls below a certain threshold, 
 #   a human operator is informed and the printing is paused 
 #   until a refill is made by the operator.
 #   
 #   Parameters:
-#       delay: delay for printing each PCB
 #       solder_capacity
 #       adhesive_capacity
+#       solder_initial_amount
+#       adhesive_initial_amount
+#       delay  (time to print a single PCB)
+#
 #
 #   Author: Neha Karanjkar
 #   Date: 19 Oct 2017
 
-import random,simpy
+import random,simpy,math
+from PCB import *
+from PCB_types import *
 
 class ScreenPrinter():
-    def __init__(self,env,name,input_buff,output_buff,delay):
+    def __init__(self,env,name,inp,outp):
+
         self.env=env
         self.name=name
-        self.input_buff=input_buff
-        self.output_buff=output_buff
-        self.delay=delay
+        self.inp=inp
+        self.outp=outp
 
-        #solder paste reserve
-        solder_initial_reserve=20
+        self.start_time=0
+        self.human_operator=None
+        
+        # default parameter values:
+        #
+        # solder paste reserve
+        self.solder_initial_amount=10
         self.solder_capacity=100
-        self.solder_reserve=simpy.Container(env,init=solder_initial_reserve,capacity=self.solder_capacity)
-
-        #adhesive reserve
-        adhesive_initial_reserve=8
+        #
+        # adhesive reserve
+        self.adhesive_initial_amount=10
         self.adhesive_capacity=100
-        self.adhesive_reserve=simpy.Container(env,init=adhesive_initial_reserve,capacity=self.adhesive_capacity)
-
-
-        #start behavior
+        
+        # create reserves
+        self.solder_reserve = simpy.Container(env,init=self.solder_initial_amount, capacity=self.solder_capacity)
+        self.adhesive_reserve=simpy.Container(env,init=self.adhesive_initial_amount, capacity=self.adhesive_capacity)
+        # start behavior
         self.process=env.process(self.behavior())
 
     def set_human_operator(self,operator):
-        #this is the operator we interrupt when the
-        #solder/adhesive reserves are low.
+        # this is the operator we interrupt when the
+        # solder/adhesive reserves are low.
         self.human_operator=operator
         
-
-
     def behavior(self):
 
-        #check if human operator has been assigned
+        # check if the human operator has been assigned
         assert(self.human_operator)
+
+        # wait until start time
+        yield (self.env.timeout(self.start_time))
 
         while True:
             
-            #wait until there's a PCB at its input
-            pcb = yield self.input_buff.get()
-            print "time=",self.env.now,self.name,"Started printing",pcb
+            # keep checking at integer time instants
+            # until a PCB arrives at the input
+            while (not self.inp.can_get()):
+                yield (self.env.timeout(1))
 
-            #check if required amount of solder is present
-            solder_required=pcb.solder_amount_required
-            if(self.solder_reserve.level<solder_required):
-                print "time=",self.env.now,self.name,"WARNING: Solder reserve low!! Needs refilling."
-                #Interrupt a human operator to start the refilling process.
+            # get the PCB
+            pcb = self.inp.get_copy()
+            print "T=",self.env.now+0.0,self.name,"started printing",pcb
+
+            # infer printing parameters from the PCB's type. 
+            solder_amt_required = get_PCB_solder_amt(pcb.type_ID)
+            adhesive_amt_required = get_PCB_adhesive_amt(pcb.type_ID)
+            
+            # check if required amounts of solder/adhesive are present
+            # If not, interrupt a human operator to start the refilling process.
+            if(self.solder_reserve.level<solder_amt_required):
+                print "T=",self.env.now+0.0,self.name,"WARNING: Solder reserve low!! Needs refilling."
                 self.human_operator.interrupt("solder refill")
             
-            #check if required amount of adhesive is present
-            adhesive_required=pcb.adhesive_amount_required
-            if(self.adhesive_reserve.level<adhesive_required):
-                print "time=",self.env.now,self.name,"WARNING: Adhesive reserve low!! Needs refilling."
-                #Interrupt a human operator to start the refilling process.
+            if(self.adhesive_reserve.level<adhesive_amt_required):
+                print "T=",self.env.now+0.0,self.name,"WARNING: Adhesive reserve low!! Needs refilling."
                 self.human_operator.interrupt("adhesive refill")
 
+            # wait until solder/adhesive have been refilled
+            yield self.solder_reserve.get(solder_amt_required)
+            yield self.adhesive_reserve.get(adhesive_amt_required)
 
-            #start printing
-            yield self.solder_reserve.get(solder_required)
-            yield self.adhesive_reserve.get(adhesive_required)
-            yield (self.env.timeout(self.delay))
-            print "time=",self.env.now,self.name,"Finished printing",pcb,
-            print "Consumed", solder_required,"units of solder and",adhesive_required,"units of adhesive"
+            #wait until an integer time instant
+            yield (self.env.timeout(math.ceil(self.env.now)-self.env.now))
             
-            #place the PCB at the output
-            #(wait until there's place at the output)
-            yield self.output_buff.put(pcb)
+            #print
+            yield (self.env.timeout(self.delay))
+            print "T=",self.env.now+0.0,self.name,"finished printing",pcb
+            
+            #Wait until there's place at the output,
+            while (not self.outp.can_put()):
+                yield (self.env.timeout(1))
+
+            #remove the PCB from this stage and send it to the output
+            yield self.inp.get()
+            yield self.outp.put(pcb)
+            print "T=",self.env.now+0.0,self.name,"output",pcb,"on",self.outp
 

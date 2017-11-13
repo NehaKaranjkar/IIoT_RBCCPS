@@ -1,8 +1,15 @@
-SimPy models for a PCB(SMT) manufacturing line
 
+* The models of individual machines are present as separate files.
+  For example: BakingOven.py, ConveyorBelt.py etc.
 
-Requirements:
-	Python 3
-	SimPy (A discrete-event simulation library)
-		See: http://simpy.readthedocs.io/en/latest/index.html
+* The machines instances are connected together 
+  and the machine parameters are specified in file:
+  AssemblyLine.py
 
+* The types of PCB jobs handled by the system are specified in
+  PCB_types.py
+
+To run this model:
+	1. Install Python 3 and SimPy version > 3.0.1
+	2. Run
+		$ python AssemblyLine.py

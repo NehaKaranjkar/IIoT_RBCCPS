@@ -11,7 +11,7 @@
 import random
 import simpy
 
-def HumanOperator(env, name, ScreenPrinterMachine):
+def HumanOperator(env, name, machine):
 
     while True:
         print "time=",env.now,name,"Started a low priority task."
@@ -33,15 +33,15 @@ def HumanOperator(env, name, ScreenPrinterMachine):
                 if(i.cause=="solder refill"):
                     print "time=",env.now,name,"Started solder refill."
                     yield env.timeout(5)
-                    refill_amount=ScreenPrinterMachine.solder_capacity-ScreenPrinterMachine.solder_reserve.level
-                    ScreenPrinterMachine.solder_reserve.put(refill_amount)
+                    refill_amount=machine.solder_capacity-machine.solder_reserve.level
+                    machine.solder_reserve.put(refill_amount)
                 
                 #refill the adhesive reserve
                 if(i.cause=="adhesive refill"):
                     print "time=",env.now,name,"Started adhesive refill."
                     yield env.timeout(5)
-                    refill_amount=ScreenPrinterMachine.adhesive_capacity-ScreenPrinterMachine.adhesive_reserve.level
-                    ScreenPrinterMachine.adhesive_reserve.put(refill_amount)
+                    refill_amount=machine.adhesive_capacity-machine.adhesive_reserve.level
+                    machine.adhesive_reserve.put(refill_amount)
 
                 #complete the remaining task
                 if(task_remaining_time>0):

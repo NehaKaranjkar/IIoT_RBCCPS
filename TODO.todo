@@ -1,0 +1,17 @@
+TODO:	
+	//Code Basic models for all components
+	//Connect together in AssemblyLine.py and test
+	//Add a README and push to repo
+	//Infer processing delays and consumables from PCB type_ID
+	//Put all model parameters in one file
+	
+	Implement a logger class
+	Add statistics collection (utilization, throughput etc)
+	Model Feeders in Pick and place
+	Create a higher-level abstraction for human tasks
+	Model machine failures and repair
+	Model power consumption
+
+
+
+
