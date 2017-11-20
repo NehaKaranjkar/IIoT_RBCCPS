@@ -62,9 +62,6 @@ line_loader      = LineLoader (env=env, name="line_loader", inp=buff_3, outp=bel
 from ScreenPrinter import *
 screen_printer   = ScreenPrinter (env=env, name="screen_printer", inp=belt_1, outp=belt_2 )
 
-from HumanOperator import *
-refill_operator = HumanOperator (env=env, name="refill_operator", machine=screen_printer)
-screen_printer.set_human_operator(refill_operator)
 
 from PickAndPlace import *
 pick_and_place_1 = PickAndPlace (env=env, name="pick_and_place_1", inp=belt_2, outp=belt_3 )
@@ -81,6 +78,12 @@ sink_1             = Sink (env=env, name="sink_1", inp=buff_6)
 sink_1.delay=0
 
 machines= [line_loader, screen_printer, pick_and_place_1, pick_and_place_2, reflow_oven, line_downloader]
+
+
+# human operators
+from HumanOperator import *
+human_operator_1 = HumanOperator (env=env, name="human_operator_1")
+human_operator_2 = HumanOperator (env=env, name="human_operator_2")
 
 
 
@@ -132,11 +135,25 @@ line_loader.delay=1
 #   a human operator is informed and the printing is paused 
 #   until a refill is made by the operator.
 #   Parameters:
-screen_printer.solder_capacity=100
-screen_printer.adhesive_capacity=100
-screen_printer.solder_initial_amount=20
-screen_printer.adhesive_initial_amount=20
+screen_printer.solder_capacity=20
+screen_printer.solder_initial_amount=2
+
+screen_printer.adhesive_capacity=20
+screen_printer.adhesive_initial_amount=3
+
 screen_printer.delay=10
+
+
+# Assign some human operators to 
+# handle refilling tasks in the screen printer.
+# A human operator remains idle until interrupted
+# by a machine and then performs the assigned task.
+screen_printer.set_refill_operator(human_operator_1)
+
+human_operator_1.assign_task(task_name="solder_refill",machine_name="screen_printer", task_ptr=solder_refill_task, machine_ptr=screen_printer, delay=1)
+human_operator_1.assign_task(task_name="adhesive_refill",machine_name="screen_printer", task_ptr=adhesive_refill_task, machine_ptr=screen_printer, delay=1)
+
+
 
 ## PickAndPlace:
 ##
@@ -170,5 +187,5 @@ reflow_oven.delay=1
 line_downloader.PCB_stack_size=source_1.PCB_stack_size 
 
 # Run simulation
-env.run(until=50)
+env.run(until=100)
 

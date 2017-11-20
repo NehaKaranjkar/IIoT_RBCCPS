@@ -1,16 +1,23 @@
 TODO:	
+	Implement systematic logging
+	Implement systematic stats collection
+	Model Feeders in Pick and place(?)
+	Model machine failures and repair
+	Model power consumption
+
+29 Nov 2017
+	Stats reporting (utilization etc)
+
+22 Nov 2017	
+	//Implement a higher-level abstraction for human tasks
+
+15 Nov 2017	
 	//Code Basic models for all components
 	//Connect together in AssemblyLine.py and test
 	//Add a README and push to repo
 	//Infer processing delays and consumables from PCB type_ID
-	//Put all model parameters in one file
+	//Put all model parameters in one place (config file)
 	
-	Implement a logger class
-	Add statistics collection (utilization, throughput etc)
-	Model Feeders in Pick and place
-	Create a higher-level abstraction for human tasks
-	Model machine failures and repair
-	Model power consumption
 
 
 

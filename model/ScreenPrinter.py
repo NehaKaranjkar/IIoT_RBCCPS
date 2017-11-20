@@ -8,10 +8,13 @@
 #   until a refill is made by the operator.
 #   
 #   Parameters:
-#       solder_capacity
-#       adhesive_capacity
-#       solder_initial_amount
-#       adhesive_initial_amount
+#       Consummables capacity and initial amounts:
+#
+#           solder_reserve.capacity
+#           solder_reserve.init (initial amount present)
+#           adhesive_reserve.capacity
+#           adhesive_reserve.init
+#
 #       delay  (time to print a single PCB)
 #
 #
@@ -22,6 +25,8 @@ import random,simpy,math
 from PCB import *
 from PCB_types import *
 
+
+
 class ScreenPrinter():
     def __init__(self,env,name,inp,outp):
 
@@ -31,34 +36,50 @@ class ScreenPrinter():
         self.outp=outp
 
         self.start_time=0
-        self.human_operator=None
         
-        # default parameter values:
+        # this is the operator we interrupt 
+        # when the solder/adhesive reserves are low.
         #
-        # solder paste reserve
-        self.solder_initial_amount=10
-        self.solder_capacity=100
-        #
-        # adhesive reserve
-        self.adhesive_initial_amount=10
-        self.adhesive_capacity=100
+        self.refill_operator=None
         
-        # create reserves
-        self.solder_reserve = simpy.Container(env,init=self.solder_initial_amount, capacity=self.solder_capacity)
-        self.adhesive_reserve=simpy.Container(env,init=self.adhesive_initial_amount, capacity=self.adhesive_capacity)
+        # Consumables: 
+        # (Solder and adhesive reserves:)
+        # default values for initial amount and capacity are 0.
+        # these parameters are to be set by the user
+        # in the top-level system description
+        self.solder_capacity = 0
+        self.solder_initial_amount = 0
+
+        self.adhesive_capacity = 0
+        self.adhesive_initial_amount =0
+        
+        self.solder_reserve = None
+        self.adhesive_reserve=None
+
+
         # start behavior
         self.process=env.process(self.behavior())
 
-    def set_human_operator(self,operator):
-        # this is the operator we interrupt when the
-        # solder/adhesive reserves are low.
-        self.human_operator=operator
+
+    def set_refill_operator(self,operator):
+        self.refill_operator=operator
         
+
     def behavior(self):
 
-        # check if the human operator has been assigned
-        assert(self.human_operator)
+        # check if the refill operator has been assigned
+        assert(self.refill_operator!=None),("please assign a refill operator to "+self.name)
+       
+        # check if consumable capacity parameters
+        # have been set while instantiating this object
+        assert(self.solder_capacity>0)
+        assert(self.adhesive_capacity>0)
+        
+        #create the reserves
+        self.solder_reserve = simpy.Container(self.env,init=self.solder_initial_amount, capacity=self.solder_capacity)
+        self.adhesive_reserve=simpy.Container(self.env,init=self.adhesive_initial_amount, capacity=self.adhesive_capacity)
 
+        
         # wait until start time
         yield (self.env.timeout(self.start_time))
 
@@ -77,19 +98,31 @@ class ScreenPrinter():
             solder_amt_required = get_PCB_solder_amt(pcb.type_ID)
             adhesive_amt_required = get_PCB_adhesive_amt(pcb.type_ID)
             
+            
+
             # check if required amounts of solder/adhesive are present
             # If not, interrupt a human operator to start the refilling process.
+            refill_needed=False
+            
             if(self.solder_reserve.level<solder_amt_required):
                 print "T=",self.env.now+0.0,self.name,"WARNING: Solder reserve low!! Needs refilling."
-                self.human_operator.interrupt("solder refill")
+                refill_needed=True
+                self.refill_operator.behavior.interrupt(self.name+":"+"solder_refill")
             
             if(self.adhesive_reserve.level<adhesive_amt_required):
                 print "T=",self.env.now+0.0,self.name,"WARNING: Adhesive reserve low!! Needs refilling."
-                self.human_operator.interrupt("adhesive refill")
-
+                refill_needed=True
+                self.refill_operator.behavior.interrupt(self.name+":"+"adhesive_refill")
+            
+            
             # wait until solder/adhesive have been refilled
             yield self.solder_reserve.get(solder_amt_required)
             yield self.adhesive_reserve.get(adhesive_amt_required)
+            
+            if refill_needed:
+                print "T=",self.env.now+0.0,self.name,"refill done."
+                refill_needed = False
+
 
             #wait until an integer time instant
             yield (self.env.timeout(math.ceil(self.env.now)-self.env.now))
@@ -106,4 +139,19 @@ class ScreenPrinter():
             yield self.inp.get()
             yield self.outp.put(pcb)
             print "T=",self.env.now+0.0,self.name,"output",pcb,"on",self.outp
+
+        
+
+
+#Solder refill task:
+# to be assigned to a human operator
+# executed by the operator
+# whenever interrupted by the machine.
+def solder_refill_task(machine):
+    refill_amount=machine.solder_reserve.capacity-machine.solder_reserve.level
+    machine.solder_reserve.put(refill_amount)
+
+def adhesive_refill_task(machine):
+    refill_amount=machine.adhesive_reserve.capacity - machine.adhesive_reserve.level
+    machine.adhesive_reserve.put(refill_amount)
 
