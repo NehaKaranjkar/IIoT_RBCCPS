@@ -5,17 +5,13 @@ Requirements:
 	Python (version > 3.2)
 	SimPy (version > 3.0.9)
 
-Usage:
-	* A block diagram of the assembly line is present
-	in documentation/
+Contents:
+	documentation 	: A block diagram of the assembly line 
+	models		: Simpy models of assembly line components
+	models/AssemblyLine.py : Integration of model components
+			and setting machine parameter values
 
-	* Models of individual components are present in 
-	/models
-
-	* Model connections and parameters can be specified
-	in AssemblyLine.py
-
-	* To run the simulation:
-		$ cd models
-		$ python AssemblyLine.py
+To Run A Simulation:
+	$ cd models
+	$ python AssemblyLine.py
 
