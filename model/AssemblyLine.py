@@ -150,8 +150,8 @@ screen_printer.delay=10
 # by a machine and then performs the assigned task.
 screen_printer.set_refill_operator(human_operator_1)
 
-human_operator_1.assign_task(task_name="solder_refill",machine_name="screen_printer", task_ptr=solder_refill_task, machine_ptr=screen_printer, delay=1)
-human_operator_1.assign_task(task_name="adhesive_refill",machine_name="screen_printer", task_ptr=adhesive_refill_task, machine_ptr=screen_printer, delay=1)
+human_operator_1.assign_task(task_name="solder_refill",machine_name="screen_printer", task_ptr=solder_refill_task, machine_ptr=screen_printer, delay=3)
+human_operator_1.assign_task(task_name="adhesive_refill",machine_name="screen_printer", task_ptr=adhesive_refill_task, machine_ptr=screen_printer, delay=3)
 
 
 
@@ -188,4 +188,10 @@ line_downloader.PCB_stack_size=source_1.PCB_stack_size
 
 # Run simulation
 env.run(until=100)
+
+# Print usage statistics:
+print "\n================================"
+print "Utilization Statistics: "
+print "================================"
+human_operator_1.print_stats()
 

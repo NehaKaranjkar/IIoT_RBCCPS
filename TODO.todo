@@ -6,10 +6,10 @@ TODO:
 	Model power consumption
 
 29 Nov 2017
-	Stats reporting (utilization etc)
 
 22 Nov 2017	
 	//Implement a higher-level abstraction for human tasks
+	//Implemment simple stats reporting (utilization etc) for a module
 
 15 Nov 2017	
 	//Code Basic models for all components
