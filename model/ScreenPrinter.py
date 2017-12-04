@@ -24,19 +24,18 @@
 import random,simpy,math
 from PCB import *
 from PCB_types import *
+from BaseOperator import BaseOperator
 
 
-
-class ScreenPrinter():
+class ScreenPrinter(BaseOperator):
     def __init__(self,env,name,inp,outp):
-
-        self.env=env
-        self.name=name
+        BaseOperator.__init__(self,env,name)
         self.inp=inp
         self.outp=outp
 
         self.start_time=0
-        
+        self.define_states(["idle","printing","waiting_for_refill"])
+
         # this is the operator we interrupt 
         # when the solder/adhesive reserves are low.
         #
@@ -82,7 +81,8 @@ class ScreenPrinter():
         
         # wait until start time
         yield (self.env.timeout(self.start_time))
-
+    
+        self.change_state("idle")
         while True:
             
             # keep checking at integer time instants
@@ -92,7 +92,8 @@ class ScreenPrinter():
 
             # get the PCB
             pcb = self.inp.get_copy()
-            print "T=",self.env.now+0.0,self.name,"started printing",pcb
+            print("T=",self.env.now+0.0,self.name,"started printing",pcb)
+            
 
             # infer printing parameters from the PCB's type. 
             solder_amt_required = get_PCB_solder_amt(pcb.type_ID)
@@ -105,22 +106,23 @@ class ScreenPrinter():
             refill_needed=False
             
             if(self.solder_reserve.level<solder_amt_required):
-                print "T=",self.env.now+0.0,self.name,"WARNING: Solder reserve low!! Needs refilling."
+                print("T=",self.env.now+0.0,self.name,"WARNING: Solder reserve low!! Needs refilling.")
                 refill_needed=True
                 self.refill_operator.behavior.interrupt(self.name+":"+"solder_refill")
             
             if(self.adhesive_reserve.level<adhesive_amt_required):
-                print "T=",self.env.now+0.0,self.name,"WARNING: Adhesive reserve low!! Needs refilling."
+                print("T=",self.env.now+0.0,self.name,"WARNING: Adhesive reserve low!! Needs refilling.")
                 refill_needed=True
                 self.refill_operator.behavior.interrupt(self.name+":"+"adhesive_refill")
             
+            self.change_state("waiting_for_refill")
             
             # wait until solder/adhesive have been refilled
             yield self.solder_reserve.get(solder_amt_required)
             yield self.adhesive_reserve.get(adhesive_amt_required)
             
             if refill_needed:
-                print "T=",self.env.now+0.0,self.name,"refill done."
+                print("T=",self.env.now+0.0,self.name,"refill done.")
                 refill_needed = False
 
 
@@ -128,17 +130,20 @@ class ScreenPrinter():
             yield (self.env.timeout(math.ceil(self.env.now)-self.env.now))
             
             #print
+            self.change_state("printing")
             yield (self.env.timeout(self.delay))
-            print "T=",self.env.now+0.0,self.name,"finished printing",pcb
+            print("T=",self.env.now+0.0,self.name,"finished printing",pcb)
             
             #Wait until there's place at the output,
+            self.change_state("idle")
+
             while (not self.outp.can_put()):
                 yield (self.env.timeout(1))
 
             #remove the PCB from this stage and send it to the output
             yield self.inp.get()
             yield self.outp.put(pcb)
-            print "T=",self.env.now+0.0,self.name,"output",pcb,"on",self.outp
+            print("T=",self.env.now+0.0,self.name,"output",pcb,"on",self.outp)
 
         
 

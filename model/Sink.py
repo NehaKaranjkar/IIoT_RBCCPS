@@ -32,7 +32,7 @@ class Sink():
             #wait until there's a stack at the input buffer
 
             stack=yield self.inp.get()
-            print "T=", self.env.now+0.0, self.name, "consumed", stack,"from",self.inp
+            print("T=", self.env.now+0.0, self.name, "consumed", stack,"from",self.inp)
             
             #produce a delay
             yield self.env.timeout(self.delay)

@@ -132,9 +132,9 @@ class ConveyorBelt():
                     yield self.output_buf.put(self.stages[-1])
                 
                 if not self.empty():
-                    print "T=",self.env.now+0.0, self.name, "Shift-right", self.show_occupancy()
+                    print("T=",self.env.now+0.0, self.name, "Shift-right", self.show_occupancy())
             else:
-                print "T=",self.env.now+0.0, self.name, "Stalled", self.show_occupancy()
+                print("T=",self.env.now+0.0, self.name, "Stalled", self.show_occupancy())
 
             #delay
             yield (self.env.timeout(self.delay))
@@ -170,7 +170,7 @@ def test_ConveyorBelt():
                     obj = "job_"+str(count)
                     yield self.output.put(obj)
                     count+=1
-                    print "T=",self.env.now, "Sender placed", obj,"on conveyor belt", self.output.show_occupancy()
+                    print("T=",self.env.now, "Sender placed", obj,"on conveyor belt", self.output.show_occupancy())
 
 
     class Receiver():
@@ -195,7 +195,7 @@ def test_ConveyorBelt():
                 #try to input an object from the conveyor belt
                 if (self.inp.can_get()):
                     obj = yield self.inp.get()
-                    print "T=",self.env.now,"Receiver picked up", obj,"from conveyor belt",self.inp.show_occupancy()
+                    print("T=",self.env.now,"Receiver picked up", obj,"from conveyor belt",self.inp.show_occupancy())
 
 
     env=simpy.Environment()

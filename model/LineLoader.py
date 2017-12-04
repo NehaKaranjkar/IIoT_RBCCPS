@@ -11,12 +11,12 @@
 # Date:   19 Oct 2017
 
 import random,simpy
+from BaseOperator import BaseOperator
 
-class LineLoader():
+class LineLoader(BaseOperator):
     
     def __init__(self, env, name, inp, outp):
-        self.env=env
-        self.name=name
+        BaseOperator.__init__(self,env,name)
         self.inp=inp
         self.outp=outp
 
@@ -28,6 +28,7 @@ class LineLoader():
     def behavior(self):
         
         yield (self.env.timeout(self.start_time))
+        self.change_state("idle")
 
         while True:
             
@@ -42,7 +43,8 @@ class LineLoader():
                     yield (self.env.timeout(1))
             
             #got a stack.
-            print "T=",self.env.now+0.0,self.name,"started unloading",pcb_stack
+            print("T=",self.env.now+0.0,self.name,"started unloading",pcb_stack)
+            self.change_state("busy")
 
             while pcb_stack.stack:
                 
@@ -58,9 +60,10 @@ class LineLoader():
 
                 #place the PCB at the output
                 yield self.outp.put(pcb)
-                print "T=",self.env.now+0.0,self.name,"placed",pcb,"on",self.outp
+                print("T=",self.env.now+0.0,self.name,"placed",pcb,"on",self.outp)
             
             # Now remove the empty tray from the inp
             # so that the next job can arrive.
             s = yield self.inp.get()
+            self.change_state("idle")
                 

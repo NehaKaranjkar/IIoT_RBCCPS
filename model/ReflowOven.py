@@ -53,7 +53,7 @@ class ReflowOven():
             if(self.inp.can_get()):
                 pcb = yield self.inp.get()
                 self.stage[0] = pcb
-                print "T=",self.env.now+0.0,self.name,"started processing",pcb,"picked up from",self.inp
+                print("T=",self.env.now+0.0,self.name,"started processing",pcb,"picked up from",self.inp)
             else:
                 self.stage[0] = None
                
@@ -66,7 +66,7 @@ class ReflowOven():
             # This must never happen, as the PCBs already inside
             # the reflowOven will overheat!!!
             while (not self.outp.can_put()):
-                print "T=",self.env.now+0.0,self.name,"has its output blocked! WARNING!!"
+                print("T=",self.env.now+0.0,self.name,"has its output blocked! WARNING!!")
                 yield self.env.timeout(1)
 
 
@@ -78,5 +78,5 @@ class ReflowOven():
             if(pcb !=None):
                 yield self.outp.put(pcb)
                 self.stage[-1]=None
-                print "T=",self.env.now+0.0,self.name,"output",pcb,"to",self.outp
+                print("T=",self.env.now+0.0,self.name,"output",pcb,"to",self.outp)
 

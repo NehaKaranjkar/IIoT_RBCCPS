@@ -13,5 +13,5 @@ Contents:
 
 To Run A Simulation:
 	$ cd models
-	$ python AssemblyLine.py
+	$ python3 AssemblyLine.py
 

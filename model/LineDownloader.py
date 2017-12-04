@@ -41,7 +41,7 @@ class LineDownloader():
                     yield self.env.timeout(1)
 
                 pcb = yield self.inp.get()
-                print "T=",self.env.now+0.0,self.name,"picked up",pcb,"from",self.inp
+                print("T=",self.env.now+0.0,self.name,"picked up",pcb,"from",self.inp)
                 pcbs.append(pcb)
 
             #create a stack
@@ -49,5 +49,5 @@ class LineDownloader():
             
             #place the stack at the output
             yield self.outp.put(pcb)
-            print "T=",self.env.now+0.0,self.name,"placed",stack,"on",self.outp
+            print("T=",self.env.now+0.0,self.name,"placed",stack,"on",self.outp)
 

@@ -13,14 +13,13 @@
 
 
 import simpy
+from BaseOperator import BaseOperator
 
-
-class BakingOven():
+class BakingOven(BaseOperator):
     
     def __init__(self, env, name, inp, outp):
 
-        self.env=env
-        self.name=name
+        BaseOperator.__init__(self,env,name)
         self.inp=inp
         self.outp=outp
         
@@ -35,6 +34,7 @@ class BakingOven():
         
         #wait until start time
         yield self.env.timeout(self.start_time)
+        self.change_state("idle")
 
         while(True):
             
@@ -43,15 +43,17 @@ class BakingOven():
                 yield (self.env.timeout(1))
 
             #start baking
+            self.change_state("busy")
             stack = self.inp.get_copy()
-            print "T=", self.env.now+0.0, self.name,"picked up", stack,"from",self.inp
+            print("T=", self.env.now+0.0, self.name,"picked up", stack,"from",self.inp)
 
             #delay
             yield (self.env.timeout(self.delay))
+            self.change_state("idle")
 
             #pick it up from the input and place it at the output buffer
             stack = yield self.inp.get()
             yield self.outp.put(stack)
 
-            print "T=", self.env.now+0.0, self.name,"output", stack,"to",self.outp
+            print("T=", self.env.now+0.0, self.name,"output", stack,"to",self.outp)
 

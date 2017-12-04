@@ -37,8 +37,12 @@ belts = [belt_1, belt_2, belt_3, belt_4, belt_5]
 # Instantiate buffers
 # (a buffer holds a stack of PCBs)
 from Buffer import *
-buff_1=Buffer(env, name="buff_1", capacity=1)
-buff_2=Buffer(env, name="buff_2", capacity=1)
+buff_11=Buffer(env, name="buff_11", capacity=1)
+buff_12=Buffer(env, name="buff_12", capacity=1)
+
+buff_21=Buffer(env, name="buff_21", capacity=1)
+buff_22=Buffer(env, name="buff_22", capacity=1)
+
 buff_3=Buffer(env, name="buff_3", capacity=1)
 buff_4=Buffer(env, name="buff_4", capacity=1)
 buff_5=Buffer(env, name="buff_5", capacity=1)
@@ -48,13 +52,15 @@ buff_6=Buffer(env, name="buff_6", capacity=1)
 # Instantiate machines and connect them using conveyor belts/buffers
 
 from Source import *
-source_1         = Source (env=env, name="source_1", outp=buff_1)
+source_1         = Source (env=env, name="source_1", outp=buff_11)
+source_2         = Source (env=env, name="source_2", outp=buff_12)
 
 from BakingOven import *
-baking_oven_1    = BakingOven (env=env, name="baking_oven_1", inp=buff_1, outp=buff_2)
+baking_oven_1    = BakingOven (env=env, name="baking_oven_1", inp=buff_11, outp=buff_21)
+baking_oven_2    = BakingOven (env=env, name="baking_oven_2", inp=buff_12, outp=buff_22)
 
 from HumanLoader import *
-human_loader     = HumanLoader (env=env, name="human_loader", inp_list=[buff_2], outp=buff_3 )
+human_loader     = HumanLoader (env=env, name="human_loader", inp_list=[buff_21,buff_22], outp=buff_3 )
 
 from LineLoader import *
 line_loader      = LineLoader (env=env, name="line_loader", inp=buff_3, outp=belt_1 )
@@ -98,6 +104,10 @@ source_1.delay = 100
 source_1.PCB_type = 1
 source_1.PCB_stack_size=10
 
+source_2.delay = 10
+source_2.PCB_type = 2
+source_2.PCB_stack_size=5
+
 # BakingOven:
 #
 # A baking oven waits until there is a stack
@@ -105,6 +115,7 @@ source_1.PCB_stack_size=10
 # for 'delay' time and then places the stack 
 # at its output. 
 baking_oven_1.delay = 10
+baking_oven_2.delay = 20
 
 #
 # HumanLoader:
@@ -190,8 +201,15 @@ line_downloader.PCB_stack_size=source_1.PCB_stack_size
 env.run(until=100)
 
 # Print usage statistics:
-print "\n================================"
-print "Utilization Statistics: "
-print "================================"
-human_operator_1.print_stats()
+print("\n================================")
+print("Utilization Report: ")
+print("================================")
+baking_oven_1.print_utilization()
+baking_oven_2.print_utilization()
+human_loader.print_utilization()
+line_loader.print_utilization()
+screen_printer.print_utilization()
+human_operator_1.print_utilization()
+pick_and_place_1.print_utilization()
+pick_and_place_2.print_utilization()
 

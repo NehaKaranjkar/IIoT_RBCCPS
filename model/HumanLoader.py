@@ -14,14 +14,14 @@
 
 
 import simpy,random
+from BaseOperator import BaseOperator
 
-
-class HumanLoader():
+class HumanLoader(BaseOperator):
     
     def __init__(self, env, name, inp_list, outp):
 
-        self.env=env
-        self.name=name
+        BaseOperator.__init__(self,env,name)
+
         self.inp_list=inp_list
         self.outp=outp
         
@@ -36,6 +36,7 @@ class HumanLoader():
         
         #wait until start time
         yield self.env.timeout(self.start_time)
+        self.change_state("idle")
 
         while(True):
             
@@ -58,12 +59,14 @@ class HumanLoader():
                     yield self.env.timeout(1)
             
             #got a stack 
-            print "T=", self.env.now+0.0, self.name,"picked up",stack,"from",p
+            print("T=", self.env.now+0.0, self.name,"picked up",stack,"from",p)
 
             #delay
+            self.change_state("busy")
             yield (self.env.timeout(self.delay))
+            self.change_state("idle")
 
             #place it at the output buffer
             yield self.outp.put(stack)
-            print "T=", self.env.now+0.0, self.name,"placed",stack,"at",self.outp
+            print("T=", self.env.now+0.0, self.name,"placed",stack,"at",self.outp)
 

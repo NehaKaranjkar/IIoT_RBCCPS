@@ -1,15 +1,18 @@
 TODO:	
 	Implement systematic logging
-	Implement systematic stats collection
-	Model Feeders in Pick and place(?)
 	Model machine failures and repair
+	Model human errors
 	Model power consumption
 
-29 Nov 2017
-
+4 Dec 2017
+	Implement systematic reporting of performance measures:
+		Average cycle time
+		Average throughput
+		//Utilization of each machine
+	
 22 Nov 2017	
 	//Implement a higher-level abstraction for human tasks
-	//Implemment simple stats reporting (utilization etc) for a module
+	//Implemment simple stats reporting (utilization) for a module
 
 15 Nov 2017	
 	//Code Basic models for all components

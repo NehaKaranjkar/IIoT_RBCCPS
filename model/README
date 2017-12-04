@@ -12,4 +12,4 @@
 To run this model:
 	1. Install Python 3 and SimPy version > 3.0.1
 	2. Run
-		$ python AssemblyLine.py
+		$ python3 AssemblyLine.py
