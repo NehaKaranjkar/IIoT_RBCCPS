@@ -46,12 +46,14 @@ class Source():
             
 
             #create a stack of PCBs
-            stack = PCB_stack(type_ID=self.PCB_type, N=self.PCB_stack_size)
+            stack = []
+            for i in range(self.PCB_stack_size):
+                stack.append(PCB(type_ID=self.PCB_type, serial_ID=i, creation_timestamp=self.env.now))
 
             #place it at the output buffer
             yield self.outp.put(stack)
 
-            print("T=", self.env.now+0.0, self.name,"output", stack,"to",self.outp)
+            print("T=", self.env.now+0.0, self.name,"output PCB stack to",self.outp)
 
             #delay
             yield (self.env.timeout(self.delay))

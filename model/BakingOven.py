@@ -45,7 +45,7 @@ class BakingOven(BaseOperator):
             #start baking
             self.change_state("busy")
             stack = self.inp.get_copy()
-            print("T=", self.env.now+0.0, self.name,"picked up", stack,"from",self.inp)
+            print("T=", self.env.now+0.0, self.name,"picked up stack from",self.inp)
 
             #delay
             yield (self.env.timeout(self.delay))
@@ -55,5 +55,5 @@ class BakingOven(BaseOperator):
             stack = yield self.inp.get()
             yield self.outp.put(stack)
 
-            print("T=", self.env.now+0.0, self.name,"output", stack,"to",self.outp)
+            print("T=", self.env.now+0.0, self.name,"output stack to",self.outp)
 

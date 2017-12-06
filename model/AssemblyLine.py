@@ -106,7 +106,7 @@ source_1.PCB_stack_size=10
 
 source_2.delay = 10
 source_2.PCB_type = 2
-source_2.PCB_stack_size=5
+source_2.PCB_stack_size=10
 
 # BakingOven:
 #
@@ -198,7 +198,7 @@ reflow_oven.delay=1
 line_downloader.PCB_stack_size=source_1.PCB_stack_size 
 
 # Run simulation
-env.run(until=100)
+env.run(until=1000)
 
 # Print usage statistics:
 print("\n================================")
@@ -212,4 +212,6 @@ screen_printer.print_utilization()
 human_operator_1.print_utilization()
 pick_and_place_1.print_utilization()
 pick_and_place_2.print_utilization()
-
+print("================================")
+print ("Total number of stacks processed =",sink_1.num_stacks_completed)
+print ("Average cycle-time per stack = ",sink_1.average_cycle_time)

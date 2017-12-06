@@ -10,6 +10,7 @@
 # Date:   10 Nov 2017
 
 import random,simpy
+from PCB import *
 
 class LineDownloader():
     
@@ -31,10 +32,10 @@ class LineDownloader():
         
         while True:
             
-            pcbs=[]
+            pcb_stack=[]
 
             #collect enough PCBS to fill a stack
-            while (len(pcbs) < self.PCB_stack_size):
+            while (len(pcb_stack) < self.PCB_stack_size):
                 
                 #wait and pick up a pcb from the conveyor belt
                 while not self.inp.can_get():
@@ -42,12 +43,10 @@ class LineDownloader():
 
                 pcb = yield self.inp.get()
                 print("T=",self.env.now+0.0,self.name,"picked up",pcb,"from",self.inp)
-                pcbs.append(pcb)
+                pcb_stack.append(pcb)
 
-            #create a stack
-            stack = Stack(pcbs)
             
             #place the stack at the output
-            yield self.outp.put(pcb)
-            print("T=",self.env.now+0.0,self.name,"placed",stack,"on",self.outp)
+            yield self.outp.put(pcb_stack)
+            print("T=",self.env.now+0.0,self.name,"placed stack on",self.outp)
 

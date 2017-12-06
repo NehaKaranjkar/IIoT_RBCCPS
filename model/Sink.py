@@ -23,6 +23,12 @@ class Sink():
         #start behavior
         self.process=env.process(self.behavior())
 
+        #count of the number of stacks completed and avg
+        #time that each stack spent in the system
+        self.num_stacks_completed=0.0
+        self.average_cycle_time=0.0
+
+
     def behavior(self):
         
         yield self.env.timeout(self.start_time)
@@ -31,8 +37,15 @@ class Sink():
             
             #wait until there's a stack at the input buffer
 
-            stack=yield self.inp.get()
-            print("T=", self.env.now+0.0, self.name, "consumed", stack,"from",self.inp)
+            pcb_stack=yield self.inp.get()
+            pcb = pcb_stack[0]
+            print("T=", self.env.now+0.0, self.name, "consumed PCB stack from",self.inp)
+
+            stack_cycle_time = self.env.now - pcb.creation_timestamp
+            self.average_cycle_time = self.average_cycle_time * self.num_stacks_completed + stack_cycle_time
+            self.num_stacks_completed+=1
+            self.average_cycle_time = self.average_cycle_time/self.num_stacks_completed
+
             
             #produce a delay
             yield self.env.timeout(self.delay)

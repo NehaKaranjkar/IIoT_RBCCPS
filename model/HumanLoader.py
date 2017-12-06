@@ -59,7 +59,7 @@ class HumanLoader(BaseOperator):
                     yield self.env.timeout(1)
             
             #got a stack 
-            print("T=", self.env.now+0.0, self.name,"picked up",stack,"from",p)
+            print("T=", self.env.now+0.0, self.name,"picked up PCB stack from",p)
 
             #delay
             self.change_state("busy")
@@ -68,5 +68,5 @@ class HumanLoader(BaseOperator):
 
             #place it at the output buffer
             yield self.outp.put(stack)
-            print("T=", self.env.now+0.0, self.name,"placed",stack,"at",self.outp)
+            print("T=", self.env.now+0.0, self.name,"placed PCB stack at",self.outp)
 

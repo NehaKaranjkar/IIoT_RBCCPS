@@ -43,13 +43,13 @@ class LineLoader(BaseOperator):
                     yield (self.env.timeout(1))
             
             #got a stack.
-            print("T=",self.env.now+0.0,self.name,"started unloading",pcb_stack)
+            print("T=",self.env.now+0.0,self.name,"started unloading stack")
             self.change_state("busy")
 
-            while pcb_stack.stack:
+            while (len(pcb_stack)!=0):
                 
                 #pick up a PCB from the stack
-                pcb = pcb_stack.stack.pop()
+                pcb = pcb_stack.pop()
 
                 #delay
                 yield (self.env.timeout(self.delay))
