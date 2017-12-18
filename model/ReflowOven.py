@@ -17,15 +17,16 @@
 #   Date: 27 Oct 2017
 
 import random,simpy
+from BaseOperator import BaseOperator
 
 
 
-class ReflowOven():
+class ReflowOven(BaseOperator):
     
     def __init__(self, env, name, inp, outp):
+        
+        BaseOperator.__init__(self,env,name)
 
-        self.env=env
-        self.name=name
         self.inp=inp
         self.outp=outp
 
@@ -36,6 +37,10 @@ class ReflowOven():
         
         #create a list to model stages in the reflow oven
         self.stage=[None for i in range(self.num_stages)]
+        
+        #states
+        self.define_states(["idle","busy"])
+
 
         #start behavior
         self.process=env.process(self.behavior())
@@ -45,6 +50,8 @@ class ReflowOven():
         
         #wait until the start_time
         yield (self.env.timeout(self.start_time))
+
+        self.change_state("busy")
         
         while True:
             
@@ -79,4 +86,15 @@ class ReflowOven():
                 yield self.outp.put(pcb)
                 self.stage[-1]=None
                 print("T=",self.env.now+0.0,self.name,"output",pcb,"to",self.outp)
+    
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # states(["idle","busy"])
+        p = [0.0, 250*1000.0]
+
+        for i in range(len(e)):
+            e[i] = p[i]* self.time_spent_in_state[i]
+        return e
+
 

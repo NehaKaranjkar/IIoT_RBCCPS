@@ -146,11 +146,11 @@ line_loader.delay=1
 #   a human operator is informed and the printing is paused 
 #   until a refill is made by the operator.
 #   Parameters:
-screen_printer.solder_capacity=20
+screen_printer.solder_capacity=200
 screen_printer.solder_initial_amount=2
 
-screen_printer.adhesive_capacity=20
-screen_printer.adhesive_initial_amount=3
+screen_printer.adhesive_capacity=200
+screen_printer.adhesive_initial_amount=200
 
 screen_printer.delay=10
 
@@ -197,21 +197,60 @@ reflow_oven.delay=1
 # Parameters:
 line_downloader.PCB_stack_size=source_1.PCB_stack_size 
 
-# Run simulation
+
+# Run simulation, 
+T =1000
+print("Running simulation for", T," seconds")
+
+
+#print the activity log to a file.
+import sys 
+import datetime
+
+original_stdout = sys.stdout
+activity_log_file = open("activity_log.txt","w")
+sys.stdout = activity_log_file
+
+current_time = datetime.datetime.now()
+current_time_str = current_time.strftime("%Y-%m-%d %H:%M")
+print("Activity Log generated on ",current_time_str)
 env.run(until=1000)
+sys.stdout = original_stdout
+
+print("Activity log generated in file: activity_log.txt")
 
 # Print usage statistics:
 print("\n================================")
-print("Utilization Report: ")
+print("Stats:")
 print("================================")
-baking_oven_1.print_utilization()
-baking_oven_2.print_utilization()
-human_loader.print_utilization()
-line_loader.print_utilization()
-screen_printer.print_utilization()
-human_operator_1.print_utilization()
-pick_and_place_1.print_utilization()
-pick_and_place_2.print_utilization()
-print("================================")
+print ("Total time elapsed = ",env.now," seconds")
 print ("Total number of stacks processed =",sink_1.num_stacks_completed)
-print ("Average cycle-time per stack = ",sink_1.average_cycle_time)
+print ("Average cycle-time per stack = ",sink_1.average_cycle_time, "seconds")
+print ("Average throughput = ",sink_1.num_stacks_completed/float(env.now)*60," stacks per minute")
+
+machines = [baking_oven_1, baking_oven_2, line_loader, screen_printer, pick_and_place_1, pick_and_place_2,reflow_oven,line_downloader]
+humans = [human_loader, human_operator_1, human_operator_2]
+
+print("\n================================")
+print("Utilization Report (operators): ")
+print("================================")
+for i in machines:
+    i.print_utilization()
+for i in humans:
+    i.print_utilization()
+
+print("\n================================")
+print("Utilization Report (conveyor belts): ")
+print("================================")
+for i in belts:
+    i.print_utilization()
+
+print("\n================================")
+print("Energy Consumption: ")
+print("================================")
+for i in machines:
+    i.print_energy_consumption()
+for i in belts:
+    i.print_energy_consumption()
+
+

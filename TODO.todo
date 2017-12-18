@@ -1,13 +1,20 @@
 TODO:	
-	Implement systematic logging
 	Model machine failures and repair
 	Model human errors
-	Model power consumption
+	*** Define the research problem ***
+
+
+20 Dec 2017
+	//Rough models for energy consumption
+	//   for each machine and conveyor belt
+
+	//Implement systematic logging 
+	// (generate an activity log file)
 
 4 Dec 2017
-	Implement systematic reporting of performance measures:
-		Average cycle time
-		Average throughput
+	//Implement systematic reporting of performance measures:
+		//Average cycle time
+		//Average throughput
 		//Utilization of each machine
 	
 22 Nov 2017	

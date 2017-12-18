@@ -70,4 +70,15 @@ class PickAndPlace(BaseOperator):
                 yield (self.env.timeout(1))
             pcb = yield self.inp.get()
             yield self.outp.put(pcb)
+    
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # states(["idle","busy","waiting_to_output"])
+        p = [200, 500, 200]
+
+        for i in range(len(e)):
+            e[i] = p[i]* self.time_spent_in_state[i]
+        return e
+
 

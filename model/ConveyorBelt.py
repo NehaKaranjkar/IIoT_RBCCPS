@@ -19,16 +19,16 @@
 #   Date: 27 Oct 2017
 
 import random,simpy
+from BaseOperator import BaseOperator
 
 
 
-class ConveyorBelt():
+class ConveyorBelt(BaseOperator):
     
      
     def __init__(self, env, name, capacity):
-      
-        self.env=env
-        self.name=name
+        BaseOperator.__init__(self,env,name)
+        
         self.capacity=capacity
         
         #default parameter values
@@ -45,6 +45,9 @@ class ConveyorBelt():
 
         # a list to model stages
         self.stages=[None for i in range(capacity)]
+        
+        #states
+        self.define_states(["stalled","moving"])
 
         # start behavior
         self.process=env.process(self.behavior())
@@ -106,6 +109,8 @@ class ConveyorBelt():
             
     def behavior(self):
         
+        self.change_state("stalled")
+
         #wait until the start_time
         yield (self.env.timeout(self.start_time))
         
@@ -115,6 +120,8 @@ class ConveyorBelt():
             #the contents of the belt.
             if(len(self.output_buf.items)==0):
                                
+                self.change_state("moving")
+                
                 #pick up the object from input_buf if present
                 if(len(self.input_buf.items)==0):
                     obj=None
@@ -134,10 +141,27 @@ class ConveyorBelt():
                 if not self.empty():
                     print("T=",self.env.now+0.0, self.name, "Shift-right", self.show_occupancy())
             else:
+                self.change_state("stalled")
                 print("T=",self.env.now+0.0, self.name, "Stalled", self.show_occupancy())
 
             #delay
             yield (self.env.timeout(self.delay))
+    
+    # calculate energy consumption for each state that the machine was in.
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # stalled
+        i = self.states.index("stalled")
+        P_stalled = 100 #watt
+        T_stalled = self.time_spent_in_state[i]
+        e[i] = P_stalled * T_stalled
+        # moving
+        i = self.states.index("moving")
+        P_stalled = float(200) #watt
+        T_stalled = float(self.time_spent_in_state[i])
+        e[i] = P_stalled * T_stalled
+        return e
 
 
 #testbench function for the ConveyorBelt:

@@ -66,4 +66,21 @@ class LineLoader(BaseOperator):
             # so that the next job can arrive.
             s = yield self.inp.get()
             self.change_state("idle")
-                
+
+
+    # calculate energy consumption for each state that the machine was in.
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # idle
+        i = self.states.index("idle")
+        P_stalled = 100 #watt
+        T_stalled = self.time_spent_in_state[i]
+        e[i] = P_stalled * T_stalled
+        # busy
+        i = self.states.index("busy")
+        P_stalled = float(200) #watt
+        T_stalled = float(self.time_spent_in_state[i])
+        e[i] = P_stalled * T_stalled
+        return e
+

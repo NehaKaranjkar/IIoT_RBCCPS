@@ -56,4 +56,20 @@ class BakingOven(BaseOperator):
             yield self.outp.put(stack)
 
             print("T=", self.env.now+0.0, self.name,"output stack to",self.outp)
+    
+    # calculate energy consumption for each state that the machine was in.
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # idle
+        i = self.states.index("idle")
+        P_stalled = 0 #watt
+        T_stalled = self.time_spent_in_state[i]
+        e[i] = P_stalled * T_stalled
+        # busy
+        i = self.states.index("busy")
+        P_stalled = float(250*1000.0) #watt
+        T_stalled = float(self.time_spent_in_state[i])
+        e[i] = P_stalled * T_stalled
+        return e
 

@@ -34,6 +34,8 @@ class ScreenPrinter(BaseOperator):
         self.outp=outp
 
         self.start_time=0
+
+        #states
         self.define_states(["idle","printing","waiting_for_refill"])
 
         # this is the operator we interrupt 
@@ -79,10 +81,11 @@ class ScreenPrinter(BaseOperator):
         self.adhesive_reserve=simpy.Container(self.env,init=self.adhesive_initial_amount, capacity=self.adhesive_capacity)
 
         
+        self.change_state("idle")
+        
         # wait until start time
         yield (self.env.timeout(self.start_time))
     
-        self.change_state("idle")
         while True:
             
             # keep checking at integer time instants
@@ -144,6 +147,16 @@ class ScreenPrinter(BaseOperator):
             yield self.inp.get()
             yield self.outp.put(pcb)
             print("T=",self.env.now+0.0,self.name,"output",pcb,"on",self.outp)
+    
+    def get_energy_consumption(self):
+
+        e = [0.0 for i in range(len(self.states))]
+        # states(["idle","printing","waiting_for_refill"])
+        p = [100, 1000, 100]
+
+        for i in range(len(e)):
+            e[i] = p[i]* self.time_spent_in_state[i]
+        return e
 
         
 

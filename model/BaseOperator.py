@@ -38,6 +38,7 @@ class BaseOperator(object):
         #stats collection:
         self.states = s
         self.time_spent_in_state = [0.0 for s in self.states]
+        self.current_state=s[0]
 
     # a function to record the time spent 
     # in the current state 
@@ -66,4 +67,26 @@ class BaseOperator(object):
             t_percent = self.time_spent_in_state[i]/total_time*100.0
             print("{0:.2f}".format(t_percent)+"%", end=' ')
         print("")
-            
+    
+    # calculate energy consumption for each state that the machine was in.
+    #(an implementation should be provided in the derived classes)
+    def get_energy_consumption(self):
+        e = []
+        for i in range(len(self.states)):
+            e.append(0.0)
+        return e
+    
+    # print energy consumption
+    def print_energy_consumption(self):
+        
+        e = self.get_energy_consumption()
+        total_e = max(sum(e),1.0)
+        
+        print(self.name,": (", end=' ')
+        for i in range(len(self.states)):
+            print(self.states[i], "=", end=' ')
+            e_percent = e[i]/total_e*100.0
+            print("{0:.2f}".format(e_percent)+"%", end=' ')
+        print (") Total energy = ","{0:.2f}".format(total_e/1e3)," Kilo Joules.",end=' ')
+        print("")
+   
