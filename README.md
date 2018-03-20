@@ -2,16 +2,19 @@
 Discrete-event models for a PCB manufacturing line.
 
 Requirements:
-	Python (version > 3.2)
-	SimPy (version > 3.0.9)
+	* Python3 (version > 3.2)
+	* SimPy (version > 3.0.9)
+	Optionally, for GUI: 
+	* Kivy (https://kivy.org/#home)
 
 Contents:
 	documentation 	: A block diagram of the assembly line 
-	models		: Simpy models of assembly line components
-	models/AssemblyLine.py : Integration of model components
-			and setting machine parameter values
+	models		: Simpy model for the assembly line and GUI frontend
 
-To Run A Simulation:
-	$ cd models
-	$ python3 AssemblyLine.py
+To run a simulation in the terminal:
+	$ cd model
+	$ python3 SMT_simulation.py
 
+To open a GUI window in the Linux terminal:
+	$ cd model
+	$ python3 SMT_dashboard.py
