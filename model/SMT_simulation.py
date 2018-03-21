@@ -308,7 +308,7 @@ class SMT_simulation():
                                             }},
         # Screen Printer:
         "screen_printer":{"label":"Screen Printer", "parameters":{\
-                                            "delay":{"label":"Delay per-component (seconds)", "default_value":0.5, "value":0.5}
+                                            "delay":{"label":"Delay per-component (seconds)", "default_value":1, "value":1}
                                             }},
                           }
 
