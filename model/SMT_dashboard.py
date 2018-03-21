@@ -22,35 +22,8 @@ from kivy.graphics import Color, Rectangle
 import SMT_simulation
 
 
-#A TextInput widget that allows only numbers(integers)
-#to be entered.
-class IntegerInput(TextInput):
-    def insert_text(self, substring, from_undo=False):
-        s=""
-        try:
-            num = int(substring)
-            s=str(num)
-        except ValueError as verr:
-            num = 0
-            s=""
-        return super(IntegerInput, self).insert_text(str(s), from_undo=from_undo)
-
-class ScrollLabel(ScrollView):
-    text = ""
-    pass
-
-class ParameterSetupGridLayout(GridLayout):
-    def __init__(self, **kwargs):
-        super(ParameterSetupGridLayout, self).__init__(**kwargs)
-        self.cols=2
-        self.padding=5
-        self.spacing=5
-        #for i in [1,2,3]:
-        #    self.add_widget(Label(text="Foo"))
-
-
 Builder.load_string("""
-<DashboardTabs>:
+<SMT_dashboard>:
 
     do_default_tab: False
     TabbedPanelItem:
@@ -62,46 +35,27 @@ Builder.load_string("""
             Label:
                 text: 'The SMT line Model'
                 size_hint_y:None
-                height:20
+                height:40
             Image:
                 source:"SMT_line.png"
                 keep_ratio:True
     TabbedPanelItem:
         text: 'Parameters'
         GridLayout:
-            rows:8
+            cols:1
             spacing:10
             padding:10
+            
             Label:
-                text: 'Set model parameters:'
+                text:"Enter machine parameters:"
                 size_hint_y:None
                 height:40
             
-            ParameterSetupGridLayout:
-                
-                Label:
-                    text: 'Screen printer latency (seconds):'
-                IntegerInput:
-                    id: param_screen_printer_latency
-                    multiline:False
-                    input_type:'number'
-                    text:str(app.param_screen_printer_latency_default)
-                
-                Label:
-                    text: 'Pick_and_place_1 latency (seconds):'
-                IntegerInput:
-                    id: param_pick_and_place_1_latency
-                    multiline:False
-                    input_type:'number'
-                    text:str(app.param_pick_and_place_1_latency_default)
-                
-                Label:
-                    text: 'Pick_and_place_2 latency (seconds):'
-                IntegerInput:
-                    id: param_pick_and_place_2_latency
-                    multiline:False
-                    input_type:'number'
-                    text:str(app.param_pick_and_place_2_latency_default)
+            ScrollView:
+                ParameterSetup:
+                    id:id_parameter_setup
+                    size_hint_y:None
+                    height:700
             Button:
                 text: 'Set'
                 on_press:root.set_parameters()
@@ -122,7 +76,6 @@ Builder.load_string("""
                 height:40
             
             GridLayout:
-                height: 60
                 cols:3
                 spacing:5
                 padding:5
@@ -141,69 +94,140 @@ Builder.load_string("""
                     on_press:root.run_simulation()
             Splitter:
                 sizable_from: 'top'
-                ScrollLabel:
+                ScrollView:
                     text: 'Simulation Results'
                     Label:
-                        id: id_label_simulation_results
+                        id:simulation_results
                         text: "\\nSimulation Results:"
                         font_size: 15
                         text_size: None, None           
-                        size_hint_y: None
-                        height: self.texture_size[1]
-                        size_hint_x: None
+                        size_hint: None, None
                         width: self.texture_size[0]
+                        height: self.texture_size[1]
     TabbedPanelItem:
         text: 'Activity Log'
-        ScrollLabel:
+        ScrollView:
             text: "Label1"
             Label:
-                id: id_label_activity_log
+                id: activity_log
                 text: "<empty>"
                 font_size: 15
-                text_size: self.width, None           
-                size_hint_y: None
+                text_size: None, None           
+                size_hint: None, None
+                width: self.texture_size[0]
                 height: self.texture_size[1]
 """)
 
 from io import StringIO
 
-class DashboardTabs(TabbedPanel):
-    def set_parameters(self):
-        param_screen_printer_latency = int(self.ids.param_screen_printer_latency.text)
-        param_pick_and_place_1_latency = int(self.ids.param_pick_and_place_1_latency.text)
-        param_pick_and_place_2_latency = int(self.ids.param_pick_and_place_2_latency.text)
 
-        print(param_screen_printer_latency)
+#A TextInput widget that allows only numbers(integers)
+#to be entered.
+class IntegerInput(TextInput):
+
+    def insert_text(self, substring, from_undo=False):
+        s=""
+        try:
+            num = int(substring)
+            s=str(num)
+        except ValueError as verr:
+            num = 0
+            s=""
+        return super(IntegerInput, self).insert_text(str(s), from_undo=from_undo)
+
+PARAM_HEIGHT= 40
+PARAM_FONT_SIZE=15
+
+class SingleParameterSetup(GridLayout):
+    def __init__(self, parameter, **kwargs):
+        global GLOBAL_PARAMETERS_LIST
+        super(SingleParameterSetup, self).__init__(**kwargs)
+
+        self.rows=1
+        self.cols=2
+        self.add_widget(Label(text=parameter[1]["label"],size_hint_y=None,height=PARAM_HEIGHT, font_size=PARAM_FONT_SIZE))
+        int_input = IntegerInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
+        self.add_widget(int_input)
+
+        
+        # add a reference to the newly created widget into the dictionary
+        parameter[1]["input_widget_ref"]=int_input
+
+
+class MachineSetup(GridLayout):
+    def __init__(self, machine, **kwargs):
+        super(MachineSetup, self).__init__(**kwargs)
+        self.cols=1
+        self.spacing=1
+        self.padding=1
+        self.add_widget(Label(text=machine[1]["label"],size_hint_y=None, height=60, font_size=15))
+        for param in machine[1]["parameters"].items():
+                self.add_widget(SingleParameterSetup(param))
+
+
+
+class ParameterSetup(GridLayout):
+    def __init__(self, **kwargs):
+        super(ParameterSetup, self).__init__(**kwargs)
+        self.cols=1
+        self.padding=5
+        self.spacing=5
+        
+    
+    def add_parameters(self, model_parameters):
+        #Input boxes for entering parameters of each machine:
+        for machine in model_parameters.items():
+            S = Splitter(sizable_from='top',strip_size='10pt')
+            S.add_widget(MachineSetup(machine))
+            self.add_widget(S)
+
+
+class SMT_dashboard(TabbedPanel):
+    
+    def __init__(self,**kwargs):
+        # Create a simulator object
+        self.simulator  = SMT_simulation.SMT_simulation()
+        # Obtain the default parameter values:
+        self.model_parameters = self.simulator.model_parameters
+        super(SMT_dashboard, self).__init__(**kwargs)
+
+        #add input boxes for setting model parameters:
+        self.ids.id_parameter_setup.add_parameters(self.model_parameters)
+        
+
+
+    def set_parameters(self):
+        # read values of the model parameters
+        # from the GUI input and save them into the dictionary
+        
+        for machine in self.model_parameters.items():
+            for param in machine[1]["parameters"].items():
+                param[1]["value"] = int(param[1]["input_widget_ref"].text)
+
+
+
 
     def run_simulation(self):
-        # run simulation
+        # run simulation for the specified amount of time
         simulation_time = int(self.ids.param_simulation_time.text)
         assert(simulation_time>=1 and simulation_time<1e10)
-        param_values = {"foo":0}
-        results_string = SMT_simulation.run_SMT_simulation(simulation_time, param_values)
+        results_string = self.simulator.run_simulation(simulation_time)
         
-        #obtain and print the activity log
+        #obtain and display the activity log
         with open("activity_log.txt") as f:
             log = f.read()
-            self.ids.id_label_activity_log.text = log
+            self.ids.activity_log.text = log
 
-        #print aggregate results 
-        self.ids.id_label_simulation_results.text="\nSimulation Results:\n"+ results_string.getvalue()
+        #display aggregate results 
+        self.ids.simulation_results.text="\nSimulation Results:\n"+ results_string.getvalue()
         pass
-    pass
 
 
-class SMT_simulatorApp(App):
-
-    #default parameter values:
-    param_screen_printer_latency_default=10
-    param_pick_and_place_1_latency_default=10
-    param_pick_and_place_2_latency_default=10
-    param_simulation_time_default=100
-
+class SMT_dashboardApp(App):
+    param_simulation_time_default = 100
     def build(self):
-        return DashboardTabs()
+        return SMT_dashboard()
 
 
 if __name__ == '__main__':
-    SMT_simulatorApp().run()
+    SMT_dashboardApp().run()
