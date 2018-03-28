@@ -55,7 +55,7 @@ Builder.load_string("""
                 ParameterSetup:
                     id:id_parameter_setup
                     size_hint_y:None
-                    height:700
+                    height:2000
             Button:
                 text: 'Set'
                 on_press:root.set_parameters()
@@ -135,6 +135,20 @@ class IntegerInput(TextInput):
             s=""
         return super(IntegerInput, self).insert_text(str(s), from_undo=from_undo)
 
+#Widget that allows only float input
+class FloatInput(TextInput):
+
+    def insert_text(self, substring, from_undo=False):
+        s=""
+        try:
+            num = float(substring)
+            s=str(num)
+        except ValueError as verr:
+            num = 0
+            s=""
+        return super(FloatInput, self).insert_text(str(s), from_undo=from_undo)
+
+
 PARAM_HEIGHT= 40
 PARAM_FONT_SIZE=15
 
@@ -146,12 +160,12 @@ class SingleParameterSetup(GridLayout):
         self.rows=1
         self.cols=2
         self.add_widget(Label(text=parameter[1]["label"],size_hint_y=None,height=PARAM_HEIGHT, font_size=PARAM_FONT_SIZE))
-        int_input = IntegerInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
-        self.add_widget(int_input)
+        float_input = FloatInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
+        self.add_widget(float_input)
 
         
         # add a reference to the newly created widget into the dictionary
-        parameter[1]["input_widget_ref"]=int_input
+        parameter[1]["input_widget_ref"]=float_input
 
 
 class MachineSetup(GridLayout):
@@ -172,7 +186,7 @@ class ParameterSetup(GridLayout):
         self.cols=1
         self.padding=5
         self.spacing=5
-        
+ 
     
     def add_parameters(self, model_parameters):
         #Input boxes for entering parameters of each machine:
@@ -180,7 +194,8 @@ class ParameterSetup(GridLayout):
             S = Splitter(sizable_from='top',strip_size='10pt')
             S.add_widget(MachineSetup(machine))
             self.add_widget(S)
-
+        self.size_hint_y=None
+        self.height=len(model_parameters)*250
 
 class SMT_dashboard(TabbedPanel):
     
@@ -202,7 +217,10 @@ class SMT_dashboard(TabbedPanel):
         
         for machine in self.model_parameters.items():
             for param in machine[1]["parameters"].items():
-                param[1]["value"] = int(param[1]["input_widget_ref"].text)
+                param[1]["value"] = float(param[1]["input_widget_ref"].text)
+        print("Model parameter values updated:")
+        print(self.model_parameters)
+
 
 
 
@@ -214,9 +232,13 @@ class SMT_dashboard(TabbedPanel):
         results_string = self.simulator.run_simulation(simulation_time)
         
         #obtain and display the activity log
-        with open("activity_log.txt") as f:
-            log = f.read()
-            self.ids.activity_log.text = log
+        if(simulation_time > 300):
+            self.ids.activity_log.text = "Activity log generated in file ./activity_log.txt \n\
+            The log is too large to display here."
+        else:
+            with open("activity_log.txt") as f:
+                log = f.read()
+                self.ids.activity_log.text = log
 
         #display aggregate results 
         self.ids.simulation_results.text="\nSimulation Results:\n"+ results_string.getvalue()
@@ -224,7 +246,7 @@ class SMT_dashboard(TabbedPanel):
 
 
 class SMT_dashboardApp(App):
-    param_simulation_time_default = 100
+    param_simulation_time_default = 300
     def build(self):
         return SMT_dashboard()
 

@@ -152,7 +152,7 @@ class ScreenPrinter(BaseOperator):
 
         e = [0.0 for i in range(len(self.states))]
         # states(["idle","printing","waiting_for_refill"])
-        p = [100, 1000, 100]
+        p = [100, 500, 100]
 
         for i in range(len(e)):
             e[i] = p[i]* self.time_spent_in_state[i]

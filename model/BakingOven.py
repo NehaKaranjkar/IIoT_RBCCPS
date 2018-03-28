@@ -26,6 +26,7 @@ class BakingOven(BaseOperator):
         #parameters, and default values
         self.delay=10
         self.start_time=0
+        self.on_temp=100
         
         #start behavior
         self.process=env.process(self.behavior())
@@ -63,13 +64,14 @@ class BakingOven(BaseOperator):
         e = [0.0 for i in range(len(self.states))]
         # idle
         i = self.states.index("idle")
-        P_stalled = 0 #watt
-        T_stalled = self.time_spent_in_state[i]
-        e[i] = P_stalled * T_stalled
+        P = 0 #watt
+        T = self.time_spent_in_state[i]
+        e[i] = P * T
         # busy
         i = self.states.index("busy")
-        P_stalled = float(250*1000.0) #watt
-        T_stalled = float(self.time_spent_in_state[i])
-        e[i] = P_stalled * T_stalled
+        P = float(2500.0) #watt
+        T = float(self.time_spent_in_state[i])
+        temp_factor = min(2, max(1, self.on_temp/100.0))
+        e[i] = P * T * temp_factor
         return e
 

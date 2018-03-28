@@ -12,6 +12,7 @@ import sys
 import datetime
 from io import StringIO
 import copy
+from collections import OrderedDict
 
 # Model components:
 from PCB import *
@@ -128,7 +129,9 @@ class SMT_simulation():
         # for 'delay' time and then places the stack 
         # at its output. 
         baking_oven_1.delay = self.model_parameters["baking_oven_1"]["parameters"]["delay"]["value"]
+        baking_oven_1.on_temp = self.model_parameters["baking_oven_1"]["parameters"]["on_temperature"]["value"]
         baking_oven_2.delay = self.model_parameters["baking_oven_2"]["parameters"]["delay"]["value"]
+        baking_oven_2.on_temp = self.model_parameters["baking_oven_2"]["parameters"]["on_temperature"]["value"]
 
         #
         # HumanLoader:
@@ -186,8 +189,8 @@ class SMT_simulation():
         ##  The time required to process a PCB is proportional
         ##  to the number of components in it
         ##   Parameters:
-        pick_and_place_1.delay=0.1
-        pick_and_place_2.delay=0.1
+        pick_and_place_1.delay=self.model_parameters["pick_and_place_1"]["parameters"]["delay"]["value"]
+        pick_and_place_2.delay=self.model_parameters["pick_and_place_2"]["parameters"]["delay"]["value"]
 
         # ReflowOven:
         # 
@@ -200,8 +203,8 @@ class SMT_simulation():
         # However, unlike a conveyour belt, the ReflowOven's belt
         # does not stall. 
         # Parameters:
-        reflow_oven.num_stages=4
-        reflow_oven.delay=1
+        reflow_oven.num_stages= self.model_parameters["reflow_oven"]["parameters"]["num_stages"]["value"]
+        reflow_oven.delay=self.model_parameters["reflow_oven"]["parameters"]["delay"]["value"]
 
         # LineDownloader.py
         #
@@ -291,27 +294,39 @@ class SMT_simulation():
         #
         
         
-        model_parameters = {\
-        # 
+        model_parameters = OrderedDict()
         # Baking Oven 1:
-        "baking_oven_1":{"label":"Baking oven 1", "parameters":{\
-                                            "delay":{"label":"Delay (seconds)", "default_value":10, "value":10},
+        model_parameters["baking_oven_1"]= {"label":"Baking oven 1", "parameters":{\
+                                            "delay":{"label":"Baking time (seconds)", "default_value":360, "value":360},
                                             "on_temperature":{"label":"ON temperature (degree Celsius)", "default_value":105, "value":105}
-                                            }},
-        "baking_oven_2":{"label":"Baking oven 2", "parameters":{\
-                                            "delay":{"label":"Delay (seconds)", "default_value":20, "value":20},
-                                            "on_temperature":{"label":"ON temperature (degree Celsius)", "default_value":65, "value":105}
-                                            }},
+                                            }}
+                                            
+        model_parameters["baking_oven_2"]= {"label":"Baking oven 2", "parameters":{\
+                                            "delay":{"label":"Baking time (seconds)", "default_value":120, "value":120},
+                                            "on_temperature":{"label":"ON temperature (degree Celsius)", "default_value":65, "value":65}
+                                            }}
         # Line Loader:
-        "line_loader":{"label":"Line Loader", "parameters":{\
-                                            "delay":{"label":"Delay (seconds)", "default_value":1, "value":1}
-                                            }},
+        model_parameters["line_loader"]=  {"label":"Line Loader", "parameters":{\
+                                            "delay":{"label":"Delay per PCB (seconds)", "default_value":1, "value":1}
+                                            }}
         # Screen Printer:
-        "screen_printer":{"label":"Screen Printer", "parameters":{\
-                                            "delay":{"label":"Delay per-component (seconds)", "default_value":1, "value":1}
-                                            }},
-                          }
-
+        model_parameters["screen_printer"]= {"label":"Screen Printer", "parameters":{\
+                                            "delay":{"label":"Printing time per PCB (seconds)", "default_value":10, "value":10}
+                                            }}
+        # Pick and place 1:
+        model_parameters["pick_and_place_1"]={"label":"Pick and Place 1", "parameters":{\
+                                            "delay":{"label":"Avg delay per component (seconds)", "default_value":0.1, "value":0.1}
+                                            }}
+        # Pick and place 2:
+        model_parameters["pick_and_place_2"]={"label":"Pick and Place 2", "parameters":{\
+                                            "delay":{"label":"Avg delay per component (seconds)", "default_value":0.1, "value":0.1}
+                                            }}
+        # Reflow oven:
+        model_parameters["reflow_oven"]= {"label":"Reflow Oven", "parameters":{\
+                                            "delay":{"label":"Avg delay per stage (seconds)", "default_value":2, "value":2},
+                                            "num_stages":{"label":"Number of stages", "default_value":4, "value":4}
+                                            }}
+ 
         return model_parameters
     
 
