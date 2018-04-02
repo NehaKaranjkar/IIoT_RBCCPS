@@ -54,8 +54,6 @@ Builder.load_string("""
             ScrollView:
                 ParameterSetup:
                     id:id_parameter_setup
-                    size_hint_y:None
-                    height:2000
             Button:
                 text: 'Set'
                 on_press:root.set_parameters()
@@ -135,18 +133,18 @@ class IntegerInput(TextInput):
             s=""
         return super(IntegerInput, self).insert_text(str(s), from_undo=from_undo)
 
+import re
 #Widget that allows only float input
 class FloatInput(TextInput):
 
+    pat = re.compile('[^0-9]')
     def insert_text(self, substring, from_undo=False):
-        s=""
-        try:
-            num = float(substring)
-            s=str(num)
-        except ValueError as verr:
-            num = 0
-            s=""
-        return super(FloatInput, self).insert_text(str(s), from_undo=from_undo)
+        pat = self.pat
+        if '.' in self.text:
+            s = re.sub(pat, '', substring)
+        else:
+            s = '.'.join([re.sub(pat, '', s) for s in substring.split('.', 1)])
+        return super(FloatInput, self).insert_text(s, from_undo=from_undo)
 
 
 PARAM_HEIGHT= 40
@@ -154,30 +152,19 @@ PARAM_FONT_SIZE=15
 
 class SingleParameterSetup(GridLayout):
     def __init__(self, parameter, **kwargs):
-        global GLOBAL_PARAMETERS_LIST
         super(SingleParameterSetup, self).__init__(**kwargs)
-
         self.rows=1
         self.cols=2
         self.add_widget(Label(text=parameter[1]["label"],size_hint_y=None,height=PARAM_HEIGHT, font_size=PARAM_FONT_SIZE))
-        float_input = FloatInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
-        self.add_widget(float_input)
+        parameter_format = parameter[1]["format"]
+        if(parameter_format == "float"):
+            input_box = FloatInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
+        elif(parameter_format == "int"):
+            input_box = IntegerInput(multiline=False, text=str(parameter[1]["default_value"]),size_hint_y=None,height=PARAM_HEIGHT,font_size=PARAM_FONT_SIZE)
 
-        
+        self.add_widget(input_box)
         # add a reference to the newly created widget into the dictionary
-        parameter[1]["input_widget_ref"]=float_input
-
-
-class MachineSetup(GridLayout):
-    def __init__(self, machine, **kwargs):
-        super(MachineSetup, self).__init__(**kwargs)
-        self.cols=1
-        self.spacing=1
-        self.padding=1
-        self.add_widget(Label(text=machine[1]["label"],size_hint_y=None, height=60, font_size=15))
-        for param in machine[1]["parameters"].items():
-                self.add_widget(SingleParameterSetup(param))
-
+        parameter[1]["input_widget_ref"]=input_box
 
 
 class ParameterSetup(GridLayout):
@@ -186,16 +173,21 @@ class ParameterSetup(GridLayout):
         self.cols=1
         self.padding=5
         self.spacing=5
+        self.size_hint_y=None
  
-    
     def add_parameters(self, model_parameters):
+        
+        total_lines=0
         #Input boxes for entering parameters of each machine:
         for machine in model_parameters.items():
-            S = Splitter(sizable_from='top',strip_size='10pt')
-            S.add_widget(MachineSetup(machine))
-            self.add_widget(S)
-        self.size_hint_y=None
-        self.height=len(model_parameters)*250
+            self.add_widget(Label(text=machine[1]["label"],size_hint_y=None, height=60, font_size=15))
+            total_lines+=1
+            for param in machine[1]["parameters"].items():
+                self.add_widget(SingleParameterSetup(param))
+                total_lines+=1
+
+        self.height=(total_lines)*70
+
 
 class SMT_dashboard(TabbedPanel):
     
@@ -217,7 +209,11 @@ class SMT_dashboard(TabbedPanel):
         
         for machine in self.model_parameters.items():
             for param in machine[1]["parameters"].items():
-                param[1]["value"] = float(param[1]["input_widget_ref"].text)
+                parameter_format = param[1]["format"] 
+                if(parameter_format=="int"):
+                    param[1]["value"] = int(param[1]["input_widget_ref"].text)
+                elif(parameter_format=="float"):
+                    param[1]["value"] = float(param[1]["input_widget_ref"].text)
         print("Model parameter values updated:")
         print(self.model_parameters)
 
