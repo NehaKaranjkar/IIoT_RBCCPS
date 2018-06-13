@@ -137,10 +137,9 @@ pick_and_place_2.set_power_ratings([100.0, 100.0, 500.0, 100.0])
 #======================================
 from PCBBufferingModule import *
 buffering_module = PCBBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
-buffering_module.capacity=40
 #  power ratings (in watts) for each state
-# states: ["filling", "emptying"]
-buffering_module.set_power_ratings([250, 250])
+# states: ["bypass","filling", "emptying"]
+buffering_module.set_power_ratings([250,250, 250])
 
 #======================================
 # Reflow Oven:
@@ -155,10 +154,15 @@ reflow_oven.setup_time=1200 # setup time is 20 minutes=1200 seconds.
 #  power ratings (in watts) for each state
 # states: ["off", "setup", "temperature_maintain_unoccupied", "temperature_maintain_occupied"]
 reflow_oven.set_power_ratings([320.0, 33000.0, 25800.0, 25800.0])
+
 #=========================================
+# BUFFERING SETTINGS:
+#
 # Let the buffering module control the turning ON and OFF
 # of the reflow oven:
+buffering_module.enable_buffering()
 buffering_module.set_reflow_oven_control(reflow_oven)
+buffering_module.capacity=160
 #=========================================
 
 
@@ -220,9 +224,9 @@ print("Stats:")
 print("================================")
 print ("Total time elapsed = ",env.now," seconds")
 print ("Total number of PCBs processed =",sink_1.num_items_finished)
-print ("Average cycle-time per PCB = %0.2f" %round(sink_1.average_cycle_time), "seconds")
-print ("Max cycle-time per PCB = %0.2f" %round(sink_1.max_cycle_time), "seconds")
-print ("Average throughput = ",sink_1.num_items_finished/float(env.now)*3600," PCBs per hour.")
+print ("Average cycle-time per PCB = %0.2f" %(sink_1.average_cycle_time), "seconds")
+print ("Max cycle-time per PCB = %0.2f" %(sink_1.max_cycle_time), "seconds")
+print ("Average throughput = %0.2f" %(sink_1.num_items_finished/float(env.now)*3600)," PCBs per hour.")
 
 machines = [line_loader, screen_printer, belt_SP_to_PP1, pick_and_place_1, pick_and_place_2, buffering_module, belt_buffering_module_to_RFO, reflow_oven]
 machines_e = [screen_printer, pick_and_place_1, pick_and_place_2, buffering_module, reflow_oven]
@@ -244,6 +248,6 @@ for i in machines_e:
     i.print_energy_consumption()
     total_energy+=sum(i.get_energy_consumption())
 print("Total energy consumed = ",total_energy/1e3, "Kilo Joules")
-print ("Average energy consumed per-PCB = ",total_energy/(float(sink_1.num_items_finished)*1e3)," Kilo Joules per PCB.")
+print ("Average energy consumed per-PCB = %0.2f" %(total_energy/(float(sink_1.num_items_finished)*1e3))," Kilo Joules per PCB.")
 
 

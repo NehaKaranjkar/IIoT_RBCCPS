@@ -1,0 +1,35 @@
+Running simulation for 24  hours
+Activity log generated in file: activity_log.txt
+
+================================
+Stats:
+================================
+Total time elapsed =  86400.0  seconds
+Total number of PCBs processed = 738.0
+Average cycle-time per PCB = 7160.17 seconds
+Max cycle-time per PCB = 11982.50 seconds
+Average throughput = 30.75  PCBs per hour.
+
+================================
+Utilization Report: 
+================================
+line_loader : idle = 91.58% loading = 8.42% 
+screen_printer : idle = 0.01% waiting_for_refill = 1.11% printing = 16.81% cleaning = 13.06% waiting_to_output = 69.01% 
+belt_SP_to_PP1 : empty = 0.05% moving = 1.86% stalled = 98.09% 
+pick_and_place_1 : idle = 0.03% waiting_for_reel_replacement = 2.78% processing = 79.10% waiting_to_output = 18.09% 
+pick_and_place_2 : idle = 28.86% waiting_for_reel_replacement = 5.56% processing = 46.41% waiting_to_output = 19.17% 
+buffering_module : bypass = 0.00% filling = 77.90% emptying = 22.10% 
+belt_buffering_module_to_RFO : empty = 77.60% moving = 0.88% stalled = 21.52% 
+reflow_oven : off = 77.10% setup = 13.89% temperature_maintain_unoccupied = 0.00% temperature_maintain_occupied = 9.01% 
+human_operator_1 : idle = 90.56% busy = 9.44% 
+
+================================
+Energy Consumption: 
+================================
+screen_printer : ( idle = 0.00% waiting_for_refill = 0.39% printing = 29.52% cleaning = 45.86% waiting_to_output = 24.23% ) Total energy =  24606.00  Kilo Joules. 
+pick_and_place_1 : ( idle = 0.01% waiting_for_reel_replacement = 0.67% processing = 94.98% waiting_to_output = 4.34% ) Total energy =  35976.00  Kilo Joules. 
+pick_and_place_2 : ( idle = 10.10% waiting_for_reel_replacement = 1.94% processing = 81.24% waiting_to_output = 6.71% ) Total energy =  24680.00  Kilo Joules. 
+buffering_module : ( bypass = 0.00% filling = 77.90% emptying = 22.10% ) Total energy =  21600.00  Kilo Joules. 
+reflow_oven : ( off = 3.45% setup = 64.05% temperature_maintain_unoccupied = 0.00% temperature_maintain_occupied = 32.50% ) Total energy =  618220.76  Kilo Joules. 
+Total energy consumed =  725082.76 Kilo Joules
+Average energy consumed per-PCB = 982.50  Kilo Joules per PCB.
