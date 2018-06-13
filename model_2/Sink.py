@@ -27,6 +27,7 @@ class Sink():
         #time that each stack spent in the system
         self.num_items_finished=0.0
         self.average_cycle_time=0.0
+        self.max_cycle_time=0.0
 
 
     def behavior(self):
@@ -40,6 +41,7 @@ class Sink():
             assert(isinstance(pcb,PCB))
             print("T=", self.env.now+0.0, self.name, "consumed a single PCB ",pcb,"from ",self.inp)
             PCB_cycle_time = self.env.now - pcb.creation_timestamp
+            self.max_cycle_time = max(self.max_cycle_time, PCB_cycle_time) 
             self.average_cycle_time = self.average_cycle_time * self.num_items_finished + PCB_cycle_time
             self.num_items_finished+=1
             self.average_cycle_time = self.average_cycle_time/self.num_items_finished

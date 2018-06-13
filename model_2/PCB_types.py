@@ -15,11 +15,11 @@ PCB_info = namedtuple('PCB_info', 'width height num_components solder_amt adhesi
 PCB_types={\
 #------------------------------------------------------------------------------------------------
 #type_ID:(    width(cm), height(cm), num_components, solder_amount(gm), adhesive_amount(gm) )
- 1       :   PCB_info( 5,          5,             28,               1.0,                1.0  ),\
- 2       :   PCB_info( 6,          5,             28,               1.0,                1.0  ),\
- 3       :   PCB_info( 7,          5,             23,               1.0,                1.0  ),\
- 4       :   PCB_info( 5,         10,             48,               1.0,                1.0  ),\
- 5       :   PCB_info( 5,         15,             70,               1.0,                1.0  )\
+ 1       :   PCB_info( 5,          5,             28,               5.0,                5.0  ),\
+ 2       :   PCB_info( 6,          5,             28,               5.0,                5.0  ),\
+ 3       :   PCB_info( 7,          5,             23,               5.0,                5.0  ),\
+ 4       :   PCB_info( 5,         10,             48,               5.0,                5.0  ),\
+ 5       :   PCB_info( 5,         15,             70,               5.0,                5.0  )\
 #------------------------------------------------------------------------------------------------
 }
 

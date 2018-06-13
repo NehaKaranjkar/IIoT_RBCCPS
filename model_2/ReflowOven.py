@@ -12,7 +12,7 @@
 # Parameters:
 #   num_stages: num of PCBS that can fit on the belt end-to-end. 
 #   delay_per_stage: delay for a PCB to move along the belt by a distance equal to the length of the PCB.
-#   setup_time : time required to achieve the requiredtemperature profile after turning ON.
+#   setup_time : time required to achieve the required temperature profile after turning ON.
 #
 # States:
 #   "off": low power
@@ -21,7 +21,18 @@
 #   "temperature_maintain_occupied" : reflow oven is on and there is atleast on PCB on the belt.
 #
 #
+# Modes:
+#   The reflow oven supports two operational modes:
+#       AUTONOMOUS:
+#           In this mode, the reflow oven immediately goes into the "setup" state
+#           at the beginning and when the setup is completed, it remains in the "maintain" states.
+#       
+#       EXTERNAL_CONTROL:
+#           In this mode the switching ON and OFF of the relow oven is controlled by an external machine,
+#           (the automatic PCB buffering module.) A fixed setup time is incurred each time the machine is turned ON. 
+#
 #   Author: Neha Karanjkar
+
 
 import random,simpy
 from BaseOperator import BaseOperator
@@ -37,6 +48,13 @@ class ReflowOven(BaseOperator):
         self.num_stages=1
         self.delay_per_stage=1
         self.setup_time=1
+
+        # Operational Modes.
+        self.operational_mode="AUTONOMOUS"  #can be set to "EXTERNAL_CONTROL"
+
+        # External control signal that is used
+        # only when the operational_mode is EXTERNAL_CONTROL
+        self.external_signal = "TURN_ON"  # can be "TURN_OFF".
         
         # states
         self.define_states(states=["off","setup","temperature_maintain_unoccupied","temperature_maintain_occupied"],start_state="off")
@@ -47,13 +65,26 @@ class ReflowOven(BaseOperator):
         # start behavior
         self.process=env.process(self.behavior())
     
+   
     def empty(self):
         for i in range(self.num_stages):
             if self.stages[i]!=None:
                 return False
         return True
+    
+    # methods that allow an external machine to 
+    # control the turning ON/OFF of the reflow oven.
+    def set_external_control(self):
+        self.operational_mode="EXTERNAL_CONTROL"
 
+    def turn_ON(self):
+        self.external_signal="TURN_ON"
+        print("T=",self.env.now+0.0,self.name,"External control registered a TURN ON request")
 
+    def turn_OFF(self):
+        self.external_signal="TURN_OFF"
+        print("T=",self.env.now+0.0,self.name,"External control registered a TURN OFF request")
+        
     def behavior(self):
 
         # checks:
@@ -63,55 +94,78 @@ class ReflowOven(BaseOperator):
         
         # create a list to model stages
         self.stages=[None for i in range(self.num_stages)]
-        self.change_state("setup")
-
-        #wait until the start_time
-        yield (self.env.timeout(self.start_time))
+        
+        if(self.operational_mode=="AUTONOMOUS"):
+            self.change_state("setup")
+        else:
+            self.change_state("off")
         
         while True:
             
-            # if the RFO is off, do nothing.
-            if (self.current_state=="off"):
-                yield (self.env.timeout(self.delay_per_stage))
-            
-            # if the RFO has been turned on, perform setup
-            elif (self.current_state=="setup"):
+            # if the RFO is in setup state, perform the full setup.
+            # irrespective of the external control.
+            # After finishing the setup, check the external control signal.
+            if (self.current_state=="setup"):
                 yield (self.env.timeout(self.setup_time))
-                self.change_state("temperature_maintain_unoccupied")
+                
+                if(self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_OFF"): 
+                    assert(self.empty())
+                    self.change_state("off")
+                else:
+                    assert(self.empty())
+                    self.change_state("temperature_maintain_unoccupied")
 
-            # else, continue with normal operation:
+            
+            # if the RFO is off, do nothing.
+            # keep waiting for external control to turn on the oven.
+            elif (self.current_state=="off"):
+                assert(self.empty())
+                if(self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_ON"): 
+                    self.change_state("setup")
+                else:
+                    yield (self.env.timeout(1))
+            
+            
+            # if the RFO is in the temperature_maintain states:
             else:
                 
-                #pick up the object from input if present
+                # pick up the object from input if there's any. 
                 if(self.inp.can_get()):
                     pcb=yield self.inp.get()
                     self.stages[0]=pcb
                 else:
                     self.stages[0]=None
                 
-                if(self.empty()): 
-                    self.change_state("temperature_maintain_unoccupied")
+                # if the reflow oven is empty,
+                # we can update the state as suggested
+                # by the external control.
+                if(self.empty()):
+                    if (self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_OFF"):
+                        self.change_state("off")
+                    else:
+                        self.change_state("temperature_maintain_unoccupied")
                 else:
                     self.change_state("temperature_maintain_occupied")
                 
-                #shift right
-                self.stages = [None] + self.stages[0:-1]
-                
-                # delay
-                yield (self.env.timeout(self.delay_per_stage-1))
-                
-                # wait until the middle of the time-slot
-                yield (self.env.timeout(0.5))
-                
-                # put the last object in output_buf
-                pcb=self.stages[-1]
-                if(pcb!=None):
-                     
-                    # place the pcb at the output
-                    yield self.outp.put(pcb)
-                    self.stages[-1]=None
-                    print("T=",self.env.now+0.0,self.name,"placed",pcb,"on",self.outp)
+                if(self.current_state=="temperature_maintain_occupied" or self.current_state=="temperature_maintain_unoccupied"):
+                    #shift right
+                    self.stages = [None] + self.stages[0:-1]
+                    
+                    # delay
+                    yield (self.env.timeout(self.delay_per_stage-1))
+                    
+                    # wait until the middle of the time-slot
+                    yield (self.env.timeout(0.5))
+                    
+                    # put the last object in output_buf
+                    pcb=self.stages[-1]
+                    if(pcb!=None):
+                         
+                        # place the pcb at the output
+                        yield self.outp.put(pcb)
+                        self.stages[-1]=None
+                        print("T=",self.env.now+0.0,self.name,"placed",pcb,"on",self.outp)
 
-                # wait until an integer time instant
-                yield (self.env.timeout(0.5))
+                    # wait until an integer time instant
+                    yield (self.env.timeout(0.5))
                 

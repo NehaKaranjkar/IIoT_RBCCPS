@@ -24,7 +24,7 @@
 import random,simpy,math
 from PCB import *
 from BaseOperator import BaseOperator
-
+from ReflowOven import *
 class PCBBufferingModule(BaseOperator):
     
     def __init__(self, env, name, inp, outp):
@@ -39,8 +39,16 @@ class PCBBufferingModule(BaseOperator):
         # states
         self.define_states(states=["filling", "emptying"], start_state="filling")
         self.process=env.process(self.behavior())
+
+        # pointer to Reflow Oven for controlling it
+        self.reflow_pointer = None
+
+    def set_reflow_oven_control(self, RFO):
+        self.reflow_pointer = RFO
+        assert(isinstance(RFO, ReflowOven))
+        self.reflow_pointer.set_external_control()
         
-    
+
     def behavior(self):
 
         #checks:
@@ -48,6 +56,7 @@ class PCBBufferingModule(BaseOperator):
         
         #Initially the machine is in "filling" mode.
         self.change_state("filling")
+        if(self.reflow_pointer!=None): self.reflow_pointer.turn_OFF()
         self.buffer=[]
         
         while True:
@@ -69,11 +78,12 @@ class PCBBufferingModule(BaseOperator):
                 
                 
                 # push this PCB into a LIFO buffer.
-                self.buffer.push(pcb)
+                self.buffer.append(pcb)
 
                 # check if the buffer is full.
                 if(len(self.buffer)>=self.capacity):
                     self.change_state("emptying")
+                    if(self.reflow_pointer!=None): self.reflow_pointer.turn_ON()
             
             
             if(self.current_state=="emptying"):
@@ -90,11 +100,12 @@ class PCBBufferingModule(BaseOperator):
                         yield (self.env.timeout(1))
 
                 # managed to output a single PCB.
-                print("T=",self.env.now+0.0,self.name,"output a single PCB",pcb)
+                print("T=",self.env.now+0.0,self.name,"output ",pcb,"to",self.outp)
 
                 #check if the buffer is empty now.
                 if(len(self.buffer)==0):
                     self.change_state("filling")
+                    if(self.reflow_pointer!=None): self.reflow_pointer.turn_OFF()
 
                 # wait till an integer time instant
                 yield (self.env.timeout(0.5))
