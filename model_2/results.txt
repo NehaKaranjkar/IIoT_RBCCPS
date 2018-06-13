@@ -1,0 +1,33 @@
+Running simulation for 28800  seconds
+Activity log generated in file: activity_log.txt
+
+================================
+Stats:
+================================
+Total time elapsed =  28800.0  seconds
+Total number of PCBs processed = 335.0
+Average cycle-time per PCB = 1771.00 seconds
+Average throughput =  41.875  PCBs per hour.
+
+================================
+Utilization Report: 
+================================
+line_loader : idle = 89.34% loading = 10.66% 
+screen_printer : idle = 0.03% waiting_for_refill = 0.00% printing = 21.25% cleaning = 16.43% waiting_to_output = 62.29% 
+belt_SP_to_PP1 : empty = 0.15% moving = 2.35% stalled = 97.50% 
+pick_and_place_1 : idle = 0.10% waiting_for_reel_replacement = 0.56% processing = 99.34% waiting_to_output = 0.00% 
+pick_and_place_2 : idle = 40.52% waiting_for_reel_replacement = 1.15% processing = 58.33% waiting_to_output = 0.00% 
+belt_PP2_to_RFO : empty = 87.79% moving = 3.49% stalled = 8.72% 
+reflow_oven : off = 0.00% setup = 0.42% temperature_maintain_unoccupied = 41.42% temperature_maintain_occupied = 58.16% 
+human_operator_1 : idle = 98.30% busy = 1.70% 
+human_operator_2 : idle = 100.00% busy = 0.00% 
+
+================================
+Energy Consumption: 
+================================
+screen_printer : ( idle = 0.01% waiting_for_refill = 0.00% printing = 31.92% cleaning = 49.36% waiting_to_output = 18.71% ) Total energy =  9586.80  Kilo Joules. 
+pick_and_place_1 : ( idle = 0.02% waiting_for_reel_replacement = 0.11% processing = 99.87% waiting_to_output = 0.00% ) Total energy =  14324.40  Kilo Joules. 
+pick_and_place_2 : ( idle = 12.16% waiting_for_reel_replacement = 0.34% processing = 87.50% waiting_to_output = 0.00% ) Total energy =  9600.00  Kilo Joules. 
+reflow_oven : ( off = 0.00% setup = 0.53% temperature_maintain_unoccupied = 41.38% temperature_maintain_occupied = 58.09% ) Total energy =  743904.00  Kilo Joules. 
+Total energy consumed =  777415.2 Kilo Joules
+Average energy consumed per-PCB =  2320.6423880597017  Kilo Joules per PCB.
