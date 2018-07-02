@@ -7,7 +7,8 @@
 # parameters:
 #   delay
 #   PCB_type
-#   PCB_stack_size
+#   PCB_stack_size # num of PCBs in each stack 
+#   PCB_batch_size # total num of PCBs to be produced.
 #   
 # Author: Neha Karanjkar
 # Date:   19 Oct 2017
@@ -32,21 +33,28 @@ class Source():
         self.delay=0
         self.PCB_type=1
         self.PCB_stack_size=1
+        self.PCB_batch_size=1000 #total number of PCBs to be produced.
         self.start_time=0
+
+        self.num_items_created =0
         
         #start behavior
         self.process=env.process(self.behavior())
+        
 
     def behavior(self):
         
         assert(isinstance(self.start_time, int))
         assert(isinstance(self.delay, int))
+        #check that batch_size is an integer multiple of stack size.
+        assert(self.PCB_batch_size % self.PCB_stack_size == 0)
 
 
         #wait until start time
         yield self.env.timeout(self.start_time)
 
-        while(True):
+        # run behavior until a certain number of PCBs have been created.
+        while(self.num_items_created < self.PCB_batch_size):
             
 
             #create a stack of PCBs
@@ -61,4 +69,13 @@ class Source():
 
             #delay
             yield (self.env.timeout(self.delay))
+
+            self.num_items_created += self.PCB_stack_size
+
+        # Now, do nothing. Stay inactive.
+        print("T=", self.env.now+0.0, self.name,"Finished creating",self.num_items_created,"PCBs.")
+        #while(True): 
+        #    yield (self.env.timeout(100*self.delay))
+
+            
 

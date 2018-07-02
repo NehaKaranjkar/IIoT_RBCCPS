@@ -18,10 +18,14 @@ class Sink():
         #default parameter values
 
         self.delay=0
+        self.batch_size = 1000 # stop simulation after these many PCBs have been processed.
         self.start_time=0.0
         
         #start behavior
         self.process=env.process(self.behavior())
+        self.stop_condition = simpy.events.Event(env) # create an event for the stop condition.
+        # simulation is stopped whan this even is triggered.
+
 
         #count of the number of stacks completed and avg
         #time that each stack spent in the system
@@ -49,5 +53,12 @@ class Sink():
             
             #produce a delay
             yield self.env.timeout(self.delay)
+
+            # stop simulation if <batch_size> number of PCBs have been processed.
+            if (self.num_items_finished >= self.batch_size):
+                print("T=", self.env.now+0.0, self.name, "finished processing",self.num_items_finished,"PCBs. Stopping simulation.")
+                self.stop_condition.succeed()
+                
+                
 
 

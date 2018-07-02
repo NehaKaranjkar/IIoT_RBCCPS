@@ -2,7 +2,7 @@
 #
 #   A machine that buffers PCBS at the output of the pick and place 
 #   so that the buffered PCBs can be sent to the Reflow Oven in a burst.
-#   The buffer has a fixed capacity.
+#   The buffer has a fixed capacity_per_stage.
 #
 #   The machine has three modes: "bypass", "filling" and "emptying".
 #   By default, the machine is in bypass mode. Buffering can be enabled
@@ -25,7 +25,7 @@
 #       The state changes back to "filling" mode when the buffer is full.
 #
 #   Parameters:
-#       capacity: buffering capacity
+#       capacity_per_stage: buffering capacity
 #       
 #   Author: Neha Karanjkar
 
@@ -42,7 +42,7 @@ class PCBBufferingModule(BaseOperator):
         self.outp=outp
         
         # parameters
-        self.capacity=1
+        self.capacity_per_stage=1
         self.buffer = None
         
         # states
@@ -68,7 +68,7 @@ class PCBBufferingModule(BaseOperator):
     def behavior(self):
 
         #checks:
-        assert(isinstance(self.capacity,int) and self.capacity>1)
+        assert(isinstance(self.capacity_per_stage,int) and self.capacity_per_stage>1)
        
         #==============================
         #Behaviour in the BYPASS mode:
@@ -138,7 +138,7 @@ class PCBBufferingModule(BaseOperator):
                     self.buffer.append(pcb)
 
                     # check if the buffer is full.
-                    if(len(self.buffer)>=self.capacity):
+                    if(len(self.buffer)>=self.capacity_per_stage):
                         self.change_state("emptying")
                         if(self.reflow_pointer!=None): self.reflow_pointer.turn_ON()
                 

@@ -18,6 +18,17 @@ env=simpy.Environment()
 
 
 #===============================================
+# Simulation parameters:
+# The simulation is run until <batch_size> number of PCBs
+# have finished processing. 
+#===============================================
+# Note that the batch size should be an integer multiple of stack_size and buffering_size.
+batch_size = 500 #simulation stops after <batch_size> PCBs have been processed.
+stack_size = 10 # number of PCBs that can be held at a time in a stack (at the Line Loader's input)
+B = 5 # number of PCBs that can be buffered in each stage of the double-buffer module. Total amount of buffering = 2XB.
+max_simulation_time_in_hours = 100
+
+#===============================================
 # Instantiate machines, set their parameters
 #and connect them using conveyor belts/buffers
 #===============================================
@@ -66,7 +77,8 @@ from Source import *
 source_1  = Source (env=env, name="source_1", outp=buff[0])
 source_1.delay = 0
 source_1.PCB_type = 1
-source_1.PCB_stack_size=10
+source_1.PCB_stack_size=stack_size
+source_1.PCB_batch_size=batch_size #total PCBs to be produced.
 
 
 #======================================
@@ -79,7 +91,7 @@ source_1.PCB_stack_size=10
 #   delay (for pushing a single PCB into the empty output buffer)
 from LineLoader import *
 line_loader      = LineLoader (env=env, name="line_loader", inp=buff[0], outp=buff[1])
-line_loader.delay= 9
+line_loader.delay= 2
 
 #======================================
 # ScreenPrinter:
@@ -124,8 +136,8 @@ pick_and_place_2 = PickAndPlace (env=env, name="pick_and_place_2", inp=buff[2], 
 pick_and_place_1.processing_delay=85
 pick_and_place_2.processing_delay=50
 # num of PCBs processed after which reel replacement is required
-pick_and_place_1.reel_replacement_interval = 20
-pick_and_place_2.reel_replacement_interval = 10
+pick_and_place_1.reel_replacement_interval = 50
+pick_and_place_2.reel_replacement_interval = 50
 #  power ratings (in watts) for each state
 # states: ["idle","waiting_for_reel_replacement","processing","waiting_to_output"]
 pick_and_place_1.set_power_ratings([100.0, 100.0, 500.0, 100.0])
@@ -147,9 +159,9 @@ buffering_module.set_power_ratings([250,250, 250])
 #  The Reflow Oven is similar to a conveyor belt.
 from ReflowOven import *
 reflow_oven = ReflowOven (env=env, name="reflow_oven", inp=belt_buffering_module_to_RFO, outp=buff[4] )
-reflow_oven.num_stages = 6
-reflow_oven.delay_per_stage=10
-reflow_oven.setup_time=1200 # setup time is 20 minutes=1200 seconds.
+reflow_oven.num_stages = 10
+reflow_oven.delay_per_stage=5
+reflow_oven.setup_time=900 # setup time is 15 minutes=900 seconds.
 
 #  power ratings (in watts) for each state
 # states: ["off", "setup", "temperature_maintain_unoccupied", "temperature_maintain_occupied"]
@@ -162,7 +174,7 @@ reflow_oven.set_power_ratings([320.0, 33000.0, 25800.0, 25800.0])
 # of the reflow oven:
 buffering_module.enable_buffering()
 buffering_module.set_reflow_oven_control(reflow_oven)
-buffering_module.capacity=160
+buffering_module.capacity_per_stage=B
 #=========================================
 
 
@@ -172,9 +184,11 @@ buffering_module.capacity=160
 # A sink consumes PCBs or PCB stacks from its input buffer
 # and maintains a count of total PCBs consumed and the average
 # cycle time for each PCB
+
 from Sink import *
 sink_1             = Sink (env=env, name="sink_1", inp=buff[4])
 sink_1.delay = 0
+sink_1.batch_size = batch_size # stop simulation after these many PCBs have been processed.
 
 #======================================
 # Assignment of Tasks to Human Operators:
@@ -197,40 +211,57 @@ human_operator_1.assign_task(task_name="reel_replacement",machine_name="pick_and
 
 
 # Run simulation, 
-hours=24
-T =3600*hours
-print("Running simulation for", hours," hours")
+T =3600*max_simulation_time_in_hours
+print("Running simulation for a maximum of ", max_simulation_time_in_hours," hours,")
+print("or until",batch_size,"PCBs have been processed, whichever is earlier.")
 
 
-#print the activity log to a file.
+import os
 import sys 
 import datetime
 
-original_stdout = sys.stdout
-activity_log_file = open("activity_log.txt","w")
-sys.stdout = activity_log_file
 
+# Creation of an activity log
+PRINT_ACTIVITY_LOG = False
+
+original_stdout = sys.stdout
+if(PRINT_ACTIVITY_LOG):
+    activity_log_file = open("activity_log.txt","w")
+    sys.stdout = activity_log_file
+else:
+    nowhere = open(os.devnull, 'w')
+    sys.stdout = nowhere
+
+# Run simulation
 current_time = datetime.datetime.now()
 current_time_str = current_time.strftime("%Y-%m-%d %H:%M")
 print("Activity Log generated on ",current_time_str)
-env.run(until=T)
+
+env.run(until=simpy.events.AnyOf(env,[sink_1.stop_condition, env.timeout(T)]))
+
+
+# Print simulation results:
 sys.stdout = original_stdout
 
-print("Activity log generated in file: activity_log.txt")
+if(PRINT_ACTIVITY_LOG): print("Activity log generated in file: activity_log.txt")
+# Compute stats:
+machines = [line_loader, screen_printer, belt_SP_to_PP1, pick_and_place_1, pick_and_place_2, buffering_module, belt_buffering_module_to_RFO, reflow_oven]
+machines_e = [screen_printer, pick_and_place_1, pick_and_place_2, buffering_module, reflow_oven]
+humans = [human_operator_1]
+total_energy=0.0
+for i in machines_e:
+    total_energy+=sum(i.get_energy_consumption())
 
 # Print usage statistics:
 print("\n================================")
 print("Stats:")
 print("================================")
-print ("Total time elapsed = ",env.now," seconds")
-print ("Total number of PCBs processed =",sink_1.num_items_finished)
-print ("Average cycle-time per PCB = %0.2f" %(sink_1.average_cycle_time), "seconds")
-print ("Max cycle-time per PCB = %0.2f" %(sink_1.max_cycle_time), "seconds")
+print ("Total time elapsed = ",env.now," seconds ( %0.2f hours)"% (env.now/3600.0))
+print ("Total number of PCBs created =",source_1.num_items_created)
+print ("Total number of PCBs finished =",sink_1.num_items_finished)
+print ("Average cycle-time per PCB = %0.2f" %(sink_1.average_cycle_time), "seconds ( %0.2f hours)"% (sink_1.average_cycle_time/3600.0))
+print ("Max cycle-time per PCB = %0.2f" %(sink_1.max_cycle_time), "seconds ( %0.2f hours)"% (sink_1.max_cycle_time/3600.0))
 print ("Average throughput = %0.2f" %(sink_1.num_items_finished/float(env.now)*3600)," PCBs per hour.")
-
-machines = [line_loader, screen_printer, belt_SP_to_PP1, pick_and_place_1, pick_and_place_2, buffering_module, belt_buffering_module_to_RFO, reflow_oven]
-machines_e = [screen_printer, pick_and_place_1, pick_and_place_2, buffering_module, reflow_oven]
-humans = [human_operator_1]
 
 print("\n================================")
 print("Utilization Report: ")
@@ -243,11 +274,10 @@ for i in humans:
 print("\n================================")
 print("Energy Consumption: ")
 print("================================")
-total_energy=0.0
 for i in machines_e:
     i.print_energy_consumption()
-    total_energy+=sum(i.get_energy_consumption())
 print("Total energy consumed = ",total_energy/1e3, "Kilo Joules")
+if(sink_1.num_items_finished==0): sink_1.num_items_finished =1
 print ("Average energy consumed per-PCB = %0.2f" %(total_energy/(float(sink_1.num_items_finished)*1e3))," Kilo Joules per PCB.")
 
 
