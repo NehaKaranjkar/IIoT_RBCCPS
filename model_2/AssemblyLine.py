@@ -17,24 +17,31 @@ import simpy
 env=simpy.Environment()
 
 
+
 #===============================================
-# Simulation parameters:
+# Main Simulation parameters:
+#===============================================
 # The simulation is run until <batch_size> number of PCBs
-# have finished processing or max_simulation_time_in_hours is elapsed,
-#whichever occurs earlier.
-#===============================================
+# have finished processing or Max_simulation_time_in_hours is elapsed,
+# whichever occurs earlier.
 # Note that the batch size should be an integer multiple of stack_size and buffering_size.
+
 batch_size = 100 #simulation stops after <batch_size> PCBs have been processed.
 stack_size = 10 # number of PCBs that can be held at a time in a stack (at the Line Loader's input)
-B = 10 # number of PCBs that can be buffered in each stage of the buffering.
-#For a single-stage buffer, Total amount of buffering = B.
-#For a double buffer, Total amount of buffering = 2*BB.
-max_simulation_time_in_hours = 100
 
+# Max simulation time:
+Max_simulation_time_in_hours = 100
 # Whether an activity log needs to be created..
 # Warning: the log file can get very large.
-PRINT_ACTIVITY_LOG = False
+Print_activity_log = True
 
+# Buffering-related parameters:
+Buffering_enabled = False
+# Whether the buffering module uses double(staggered) buffering or single buffering.
+Double_buffering_enabled = True
+B = 5 # number of PCBs that can be buffered in each stage of the buffering.
+#For a single-stage buffer, Total amount of buffering = B.
+#For a double buffer, Total amount of buffering = 2*BB.
 
 assert(batch_size % stack_size ==0)
 assert(batch_size % (2*B) == 0)
@@ -48,10 +55,11 @@ assert(batch_size % (2*B) == 0)
 from PCB import *           
 
 
-# Instantiate buffers.
 # Succesive machines in the assembly line are connected
-# using buffers. One machine can "put" and the next machine 
+# using buffers(slots). One machine can "put" and the next machine 
 # can "get"  a PCB from the buffer.
+#NOTE: these buffers are just placeholders for a single PCB.
+# These are different from a PCB buffering "module". 
 from Buffer import *
 buff = []
 NUM_BUFFERS = 6
@@ -159,10 +167,29 @@ pick_and_place_2.set_power_ratings([100.0, 100.0, 500.0, 100.0])
 # PCB Buffering module:
 #======================================
 from PCBBufferingModule import *
-buffering_module = PCBBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
-#  power ratings (in watts) for each state
-# states: ["bypass","filling", "emptying"]
-buffering_module.set_power_ratings([250,250, 250])
+from PCBDoubleBufferingModule import *
+
+if(Double_buffering_enabled):
+    # Double buffering
+    buffering_module = PCBDoubleBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
+    buffering_module.capacity_per_stage=B
+    #  set power ratings (in watts) for each state
+    #  states: ["bypass","buffering_enabled"]
+    buffering_module.set_power_ratings([250,250])
+else:
+    # Single buffering
+    buffering_module = PCBBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
+    buffering_module.capacity=B
+    #  set power ratings (in watts) for each state
+    #  states: ["bypass","filling", "emptying"]
+    buffering_module.set_power_ratings([250,250, 250])
+
+if (Buffering_enabled):
+    buffering_module.enable_buffering()
+#=========================================
+
+
+
 
 #======================================
 # Reflow Oven:
@@ -178,14 +205,10 @@ reflow_oven.setup_time=900 # setup time is 15 minutes=900 seconds.
 # states: ["off", "setup", "temperature_maintain_unoccupied", "temperature_maintain_occupied"]
 reflow_oven.set_power_ratings([320.0, 33000.0, 25800.0, 25800.0])
 
-#=========================================
-# BUFFERING SETTINGS:
-#
-# Let the buffering module control the turning ON and OFF
-# of the reflow oven:
-buffering_module.enable_buffering()
-buffering_module.set_reflow_oven_control(reflow_oven)
-buffering_module.capacity=B
+if (Buffering_enabled):
+    # Let the buffering module control the turning ON and OFF
+    # of the reflow oven:
+    buffering_module.set_reflow_oven_control(reflow_oven)
 #=========================================
 
 
@@ -222,8 +245,8 @@ human_operator_1.assign_task(task_name="reel_replacement",machine_name="pick_and
 
 
 # Run simulation, 
-T =3600*max_simulation_time_in_hours
-print("Running simulation for a maximum of ", max_simulation_time_in_hours," hours,")
+T =3600*Max_simulation_time_in_hours
+print("Running simulation for a maximum of ", Max_simulation_time_in_hours," hours,")
 print("or until",batch_size,"PCBs have been processed, whichever is earlier.")
 
 
@@ -235,7 +258,7 @@ import datetime
 
 # Creation of an activity log
 original_stdout = sys.stdout
-if(PRINT_ACTIVITY_LOG):
+if(Print_activity_log):
     activity_log_file = open("activity_log.txt","w")
     sys.stdout = activity_log_file
 else:
@@ -253,7 +276,7 @@ env.run(until=simpy.events.AnyOf(env,[sink_1.stop_condition, env.timeout(T)]))
 # Print simulation results:
 sys.stdout = original_stdout
 
-if(PRINT_ACTIVITY_LOG): print("Activity log generated in file: activity_log.txt")
+if(Print_activity_log): print("Activity log generated in file: activity_log.txt")
 # Compute stats:
 machines = [line_loader, screen_printer, belt_SP_to_PP1, pick_and_place_1, pick_and_place_2, buffering_module, belt_buffering_module_to_RFO, reflow_oven]
 machines_e = [screen_printer, pick_and_place_1, pick_and_place_2, buffering_module, reflow_oven]

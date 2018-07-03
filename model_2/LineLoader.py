@@ -48,8 +48,8 @@ class LineLoader(BaseOperator):
 
             while (len(pcb_stack)!=0):
                 
-                #pick up a PCB from the stack
-                pcb = pcb_stack.pop()
+                #pick up a PCB from the stack in First-In-First-Out order:
+                pcb = pcb_stack.pop(0)
 
                 # wait until there's place at the output
                 while not self.outp.can_put():

@@ -60,7 +60,8 @@ class Source():
             #create a stack of PCBs
             stack = []
             for i in range(self.PCB_stack_size):
-                stack.append(PCB(type_ID=self.PCB_type, serial_ID=i, creation_timestamp=self.env.now))
+                self.num_items_created += 1
+                stack.append(PCB(type_ID=self.PCB_type, serial_ID=self.num_items_created, creation_timestamp=self.env.now))
 
             #place it at the output buffer
             yield self.outp.put(stack)
@@ -70,7 +71,6 @@ class Source():
             #delay
             yield (self.env.timeout(self.delay))
 
-            self.num_items_created += self.PCB_stack_size
 
         # Now, do nothing. Stay inactive.
         print("T=", self.env.now+0.0, self.name,"Finished creating",self.num_items_created,"PCBs.")
