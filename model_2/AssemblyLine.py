@@ -20,13 +20,24 @@ env=simpy.Environment()
 #===============================================
 # Simulation parameters:
 # The simulation is run until <batch_size> number of PCBs
-# have finished processing. 
+# have finished processing or max_simulation_time_in_hours is elapsed,
+#whichever occurs earlier.
 #===============================================
 # Note that the batch size should be an integer multiple of stack_size and buffering_size.
-batch_size = 500 #simulation stops after <batch_size> PCBs have been processed.
+batch_size = 100 #simulation stops after <batch_size> PCBs have been processed.
 stack_size = 10 # number of PCBs that can be held at a time in a stack (at the Line Loader's input)
-B = 5 # number of PCBs that can be buffered in each stage of the double-buffer module. Total amount of buffering = 2XB.
+B = 10 # number of PCBs that can be buffered in each stage of the buffering.
+#For a single-stage buffer, Total amount of buffering = B.
+#For a double buffer, Total amount of buffering = 2*BB.
 max_simulation_time_in_hours = 100
+
+# Whether an activity log needs to be created..
+# Warning: the log file can get very large.
+PRINT_ACTIVITY_LOG = False
+
+
+assert(batch_size % stack_size ==0)
+assert(batch_size % (2*B) == 0)
 
 #===============================================
 # Instantiate machines, set their parameters
@@ -174,7 +185,7 @@ reflow_oven.set_power_ratings([320.0, 33000.0, 25800.0, 25800.0])
 # of the reflow oven:
 buffering_module.enable_buffering()
 buffering_module.set_reflow_oven_control(reflow_oven)
-buffering_module.capacity_per_stage=B
+buffering_module.capacity=B
 #=========================================
 
 
@@ -221,9 +232,8 @@ import sys
 import datetime
 
 
-# Creation of an activity log
-PRINT_ACTIVITY_LOG = False
 
+# Creation of an activity log
 original_stdout = sys.stdout
 if(PRINT_ACTIVITY_LOG):
     activity_log_file = open("activity_log.txt","w")
