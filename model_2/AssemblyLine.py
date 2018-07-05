@@ -36,10 +36,10 @@ Max_simulation_time_in_hours = 100
 Print_activity_log = True
 
 # Buffering-related parameters:
-Buffering_enabled = False
+Buffering_enabled = True
 # Whether the buffering module uses double(staggered) buffering or single buffering.
 Double_buffering_enabled = True
-B = 5 # number of PCBs that can be buffered in each stage of the buffering.
+B = 10 # number of PCBs that can be buffered in each stage of the buffering.
 #For a single-stage buffer, Total amount of buffering = B.
 #For a double buffer, Total amount of buffering = 2*BB.
 
@@ -199,7 +199,7 @@ from ReflowOven import *
 reflow_oven = ReflowOven (env=env, name="reflow_oven", inp=belt_buffering_module_to_RFO, outp=buff[4] )
 reflow_oven.num_stages = 10
 reflow_oven.delay_per_stage=5
-reflow_oven.setup_time=900 # setup time is 15 minutes=900 seconds.
+#reflow_oven.setup_time=900 # setup time is 15 minutes=900 seconds.
 
 #  power ratings (in watts) for each state
 # states: ["off", "setup", "temperature_maintain_unoccupied", "temperature_maintain_occupied"]

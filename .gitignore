@@ -1,5 +1,8 @@
+
 #project specific
 activity_log.txt
+*.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

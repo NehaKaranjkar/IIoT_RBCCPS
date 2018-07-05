@@ -12,7 +12,6 @@
 # Parameters:
 #   num_stages: num of PCBS that can fit on the belt end-to-end. 
 #   delay_per_stage: delay for a PCB to move along the belt by a distance equal to the length of the PCB.
-#   setup_time : time required to achieve the required temperature profile after turning ON.
 #
 # States:
 #   "off": low power
@@ -36,6 +35,7 @@
 
 import random,simpy
 from BaseOperator import BaseOperator
+import math
 
 class ReflowOven(BaseOperator):
     
@@ -47,8 +47,7 @@ class ReflowOven(BaseOperator):
         # parameters
         self.num_stages=1
         self.delay_per_stage=1
-        self.setup_time=1
-
+        
         # Operational Modes.
         self.operational_mode="AUTONOMOUS"  #can be set to "EXTERNAL_CONTROL"
 
@@ -59,9 +58,19 @@ class ReflowOven(BaseOperator):
         # states
         self.define_states(states=["off","setup","temperature_maintain_unoccupied","temperature_maintain_occupied"],start_state="off")
         
+        # Parameters that determine the setup time
+        #(time to raise the temperature of teh oven to a required value.)
+        self.temp_max = 200.0 # Temp (degrees Celcius) in maintain state.
+        self.temp_room = 30.0 # Temp (degrees Celcius) ambient.
+        self.temp_current = 0.0 # variable that strores the current temperature.
+        self.timestamp_turn_OFF =0 # time instant at which the oven was last turned OFF.
+        self.cooling_rate_constant = 0.5 # constant that determines cooling rate
+        self.heating_rate_constant = 170.0 # constant that determines heating rate (degrees celcius per hour)
+        self.setup_time=0 #<== value is dynamically computed using the above parameters.
+
         # create a list to model stages
         self.stages=[]
-        
+
         # start behavior
         self.process=env.process(self.behavior())
     
@@ -90,11 +99,14 @@ class ReflowOven(BaseOperator):
         # checks:
         assert( (type(self.num_stages)==int) and (self.num_stages>=2))
         assert( (type(self.delay_per_stage)==int) and (self.delay_per_stage>=1))
-        assert( (type(self.setup_time)==int) and (self.setup_time>1))
         
         # create a list to model stages
         self.stages=[None for i in range(self.num_stages)]
-        
+       
+        # set the initial temperature to room temperature.
+        self.temp_current = self.temp_room
+
+        # set the initial state
         if(self.operational_mode=="AUTONOMOUS"):
             self.change_state("setup")
         else:
@@ -106,14 +118,36 @@ class ReflowOven(BaseOperator):
             # irrespective of the external control.
             # After finishing the setup, check the external control signal.
             if (self.current_state=="setup"):
+                # =====================
+                # SETUP
+                #
+                # compute the setup time which depends on current temperature
+                # and the maximum temperature to be attained.
+                t_setup = (self.temp_max - self.temp_current)/self.heating_rate_constant*3600
+                # round the setup time to an integer.
+                self.setup_time = int(round(t_setup))
+                assert( (type(self.setup_time)==int) and (self.setup_time>1))
+                print("T=",self.env.now+0.0,self.name,"Starting setup. Expected setup time = %0.2f hours"%(self.setup_time/3600.0))
                 yield (self.env.timeout(self.setup_time))
-                
+                self.temp_current = self.temp_max
+
+                # at the end of setup period, check the external signals:
                 if(self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_OFF"): 
                     assert(self.empty())
+                    #================
+                    # SETUP -> OFF
+                    #
                     self.change_state("off")
+                    self.timestamp_turn_OFF = self.env.now
+                    #================
+                
                 else:
                     assert(self.empty())
+                    #===================
+                    # SETUP -> MAINTAIN
+                    #
                     self.change_state("temperature_maintain_unoccupied")
+                    #===================
 
             
             # if the RFO is off, do nothing.
@@ -121,7 +155,19 @@ class ReflowOven(BaseOperator):
             elif (self.current_state=="off"):
                 assert(self.empty())
                 if(self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_ON"): 
+                    
+                    #===================
+                    # OFF -> SETUP
+                    #
+                    # compute the current temperature, which has decayed since the
+                    # oven was turned off.
+                    time_elapsed_in_hours = (self.env.now- self.timestamp_turn_OFF)/3600.0
+                    self.temp_new = self.temp_room + (self.temp_current-self.temp_room)\
+                        * math.exp(-1.0* self.cooling_rate_constant *time_elapsed_in_hours)
+                    self.temp_current = self.temp_new 
+                    print("T=",self.env.now+0.0,self.name,"Turning ON. Time elapsed since last turn_OFF = %0.2f"%time_elapsed_in_hours,"hours. Current_temp = %0.2f"%self.temp_current)
                     self.change_state("setup")
+                    #================
                 else:
                     yield (self.env.timeout(1))
             
@@ -141,7 +187,12 @@ class ReflowOven(BaseOperator):
                 # by the external control.
                 if(self.empty()):
                     if (self.operational_mode=="EXTERNAL_CONTROL" and self.external_signal=="TURN_OFF"):
+                        #================
+                        # MAINTAIN -> OFF
+                        #
                         self.change_state("off")
+                        self.timestamp_turn_OFF = self.env.now
+                        #================
                     else:
                         self.change_state("temperature_maintain_unoccupied")
                 else:
