@@ -73,21 +73,31 @@ class BaseOperator(object):
         self.state_change_timestamp=self.env.now
         if(new_state!=prev_state):
             print("T=", self.env.now+0.0, self.name, "changed state to ",new_state)
+    
+    
+    def get_utilization(self):
+        utilization = []
+        self.update_time_spent_in_current_state()
+        total_time = sum(self.time_spent_in_state)
+        assert (total_time>0)
+        for i in range(len(self.states)):
+            t = self.time_spent_in_state[i]
+            t_percent = self.time_spent_in_state[i]/total_time*100.0
+            utilization.append(t_percent)
+        return utilization
+
 
     # print time spent in each state
     def print_utilization(self):
         
-        self.update_time_spent_in_current_state()
-        total_time = sum(self.time_spent_in_state)
-        assert (total_time>0)
+        u = self.get_utilization()
         print(self.name,":",end=' ')
         for i in range(len(self.states)):
             print(self.states[i], "=",end=' ')
-            t = self.time_spent_in_state[i]
-            t_percent = self.time_spent_in_state[i]/total_time*100.0
-            print("{0:.2f}".format(t_percent)+"%",end=' ')
+            print("{0:.2f}".format(u[i])+"%",end=' ')
         print("")
     
+        
     # calculate energy consumption (in joules) 
     # for each state that the machine was in.
     def get_energy_consumption(self):
