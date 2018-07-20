@@ -34,7 +34,6 @@ import random,simpy,math
 from PCB import *
 from BaseOperator import BaseOperator
 from ReflowOven import *
-
 class PCBBufferingModule(BaseOperator):
     
     def __init__(self, env, name, inp, outp):
@@ -44,6 +43,8 @@ class PCBBufferingModule(BaseOperator):
         
         # parameters
         self.capacity=1
+        self.k = 0 # turn on the RFO as soon as capacity-k items have accumulated in the buffer.
+        self.buffering_mode = "LIFO" #can be "LIFO" or "FIFO"
         self.buffer = None
         
         # states
@@ -70,7 +71,8 @@ class PCBBufferingModule(BaseOperator):
 
         #checks:
         assert(isinstance(self.capacity,int) and self.capacity>1)
-       
+        assert(isinstance(self.k,int       ) and self.k>=0 and self.k<=(self.capacity-1))
+        assert(self.buffering_mode=="FIFO" or self.buffering_mode=="LIFO")
         #==============================
         #Behaviour in the BYPASS mode:
         #==============================
@@ -135,13 +137,15 @@ class PCBBufferingModule(BaseOperator):
                     print("T=",self.env.now+0.0,self.name,"buffering a PCB",pcb)
                     
                     
-                    # push this PCB into a LIFO buffer.
+                    # push this PCB into the buffer.
                     self.buffer.append(pcb)
+
+                    # Check if the reflow oven should be turned on now
+                    if((len(self.buffer)==(self.capacity-self.k)) and self.reflow_pointer!=None): self.reflow_pointer.turn_ON()
 
                     # check if the buffer is full.
                     if(len(self.buffer)>=self.capacity):
                         self.change_state("emptying")
-                        if(self.reflow_pointer!=None): self.reflow_pointer.turn_ON()
                 
                 
                 if(self.current_state=="emptying"):
@@ -152,13 +156,17 @@ class PCBBufferingModule(BaseOperator):
                     # wait until there's place at the output buffer
                     while(True):
                         if self.outp.can_put():
-                            yield self.outp.put(self.buffer.pop())
+                            if(self.buffering_mode == "FIFO"):
+                                out_pcb = self.buffer.pop(0)
+                            elif (self.buffering_mode == "LIFO"):
+                                out_pcb = self.buffer.pop()
+                            yield self.outp.put(out_pcb)
                             break
                         else:
                             yield (self.env.timeout(1))
 
                     # managed to output a single PCB.
-                    print("T=",self.env.now+0.0,self.name,"output ",pcb,"to",self.outp)
+                    print("T=",self.env.now+0.0,self.name,"in ",self.buffering_mode," mode output ",out_pcb,"to",self.outp)
 
                     #check if the buffer is empty now.
                     if(len(self.buffer)==0):

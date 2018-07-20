@@ -38,6 +38,8 @@ class PCBDoubleBufferingModule(BaseOperator):
         
         # parameters
         self.capacity_per_stage=1
+        self.k = 0 # turn on the RFO as soon as capacity-k items have accumulated in the buffer.
+        self.buffering_mode = "LIFO" # can be "LIFO" or "FIFO"
         self.in_buffer = None
         self.out_buffer = None
         
@@ -65,6 +67,7 @@ class PCBDoubleBufferingModule(BaseOperator):
 
         #checks:
         assert(isinstance(self.capacity_per_stage,int) and self.capacity_per_stage>1)
+        assert(isinstance(self.k,int       ) and self.k>=0 and self.k<=(self.capacity_per_stage-1))
        
         #==============================
         #Behaviour in the BYPASS mode:
@@ -130,6 +133,10 @@ class PCBDoubleBufferingModule(BaseOperator):
                         print("T=",self.env.now+0.0,self.name,"input a PCB",pcb)
                         if (len(self.in_buffer)==self.capacity_per_stage):
                             print("T=",self.env.now+0.0,self.name,"input buffer is full.")
+                        
+                        # Check if the reflow oven should be turned on now
+                        if((len(self.in_buffer)==(self.capacity_per_stage-self.k)) and self.reflow_pointer!=None):
+                            self.reflow_pointer.turn_ON()
 
                     
                     #================================================
@@ -143,8 +150,6 @@ class PCBDoubleBufferingModule(BaseOperator):
                         self.out_buffer.extend(self.in_buffer)
                         self.in_buffer=[]
                         print("T=",self.env.now+0.0,self.name,"transferring contents of in_buffer to out_buffer.")
-                        # turn ON the reflow oven now
-                        if(self.reflow_pointer!=None): self.reflow_pointer.turn_ON()
                         
                     #================================================
                     # Output 
@@ -152,8 +157,12 @@ class PCBDoubleBufferingModule(BaseOperator):
                     # Output can happen only at the middle of time-slots. (0.5, 1.5, 2.5...)
                     # check if there's a PCB in the out_buffer and place at the output:
                     if(len(self.out_buffer)>0 and self.outp.can_put()):
-                        out_pcb = self.out_buffer.pop()
+                        if(self.buffering_mode=="LIFO"):
+                            out_pcb = self.out_buffer.pop()
+                        else:
+                            out_pcb = self.out_buffer.pop(0)
                         yield self.outp.put(out_pcb)
+                        
                         print("T=",self.env.now+0.0,self.name,"output a PCB",out_pcb,"to",self.outp)
                         if (len(self.out_buffer)==0):
                             print("T=",self.env.now+0.0,self.name,"output buffer is empty.")

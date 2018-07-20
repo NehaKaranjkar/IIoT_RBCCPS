@@ -43,12 +43,12 @@ class Sink():
             #wait until there's a PCB at the input.
             pcb =yield self.inp.get()
             assert(isinstance(pcb,PCB))
-            print("T=", self.env.now+0.0, self.name, "consumed a single PCB ",pcb,"from ",self.inp)
             PCB_cycle_time = self.env.now - pcb.creation_timestamp
             self.max_cycle_time = max(self.max_cycle_time, PCB_cycle_time) 
             self.average_cycle_time = self.average_cycle_time * self.num_items_finished + PCB_cycle_time
             self.num_items_finished+=1
             self.average_cycle_time = self.average_cycle_time/self.num_items_finished
+            print("T=", self.env.now+0.0, self.name, "consumed a single PCB ",pcb,"from ",self.inp," which incurred a cycle time of %0.2f"%(PCB_cycle_time/3600.0),"hours. The Max cycle-time so far is %0.2f"%(self.max_cycle_time/3600.0),"hours.")
 
             
             #produce a delay

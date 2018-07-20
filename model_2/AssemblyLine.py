@@ -49,11 +49,12 @@ max_simulation_time_in_hours = 100
 # Warning: the log file can get very large.
 print_activity_log = False
 
-# Buffering-related parameters:
-buffering_enabled = True  #whether buffering is enabled
-double_buffering_enabled = False #use single buffering or double?
-buffer_capacity_per_stage = 32 #max number of items that can be buffered per stage.
-
+# Buffering-related parameters
+buffering_enabled = True  #w hether buffering is enabled
+double_buffering_enabled = False # use single buffering or double?
+buffer_capacity_per_stage = 32 # max number of items that can be buffered per stage.
+reflow_oven_turn_on_margin_k = 0 # turn on the reflow oven as soon as (capacity - k) items have accumulated
+buffering_mode = "LIFO"  # Can be either "LIFO" or "FIFO"
 
 
 
@@ -183,6 +184,8 @@ def RunSimulation():
         # Double buffering
         buffering_module = PCBDoubleBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
         buffering_module.capacity_per_stage=buffer_capacity_per_stage
+        buffering_module.k = reflow_oven_turn_on_margin_k
+        buffering_module.buffering_mode = buffering_mode
         #  set power ratings (in watts) for each state
         #  states: ["bypass","buffering_enabled"]
         buffering_module.set_power_ratings([250,250])
@@ -190,6 +193,8 @@ def RunSimulation():
         # Single buffering
         buffering_module = PCBBufferingModule (env=env, name="buffering_module", inp=buff[3], outp=belt_buffering_module_to_RFO )
         buffering_module.capacity=buffer_capacity_per_stage
+        buffering_module.k = reflow_oven_turn_on_margin_k 
+        buffering_module.buffering_mode = buffering_mode
         #  set power ratings (in watts) for each state
         #  states: ["bypass","filling", "emptying"]
         buffering_module.set_power_ratings([250,250, 250])
@@ -327,7 +332,8 @@ def RunSimulation():
     if(sink_1.num_items_finished==0): sink_1.num_items_finished =1
     print ("Average energy consumed per-PCB = %0.2f" %(avg_energy_per_PCB)," Kilo Joules per PCB.")
 
-    result = [buffer_capacity_per_stage, avg_throughput, avg_cycle_time_hrs, max_cycle_time_hrs, avg_energy_per_PCB]
+    result = [reflow_oven_turn_on_margin_k, buffer_capacity_per_stage, avg_throughput, avg_cycle_time_hrs, max_cycle_time_hrs, avg_energy_per_PCB]
     result.extend(RFO_utilization)
+
     return result
 
