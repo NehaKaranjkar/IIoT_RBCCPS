@@ -30,6 +30,8 @@ from Sink import *
 from HumanOperator import *
 
 
+import os
+import sys
 
 
 class SMT_simulation():
@@ -46,7 +48,7 @@ class SMT_simulation():
     # a specified amount of time.
     # The values of the model parameters are passed
     # as a dictionary.
-    def run_simulation(self,simulation_time):
+    def run_simulation(self,simulation_time, generate_activity_log):
         
         #check arguments:
         assert(simulation_time >= 1)
@@ -221,19 +223,25 @@ class SMT_simulation():
         print("Running simulation for", T," seconds")
 
         #Generate the activity log into a file
-        activity_log_file = open("activity_log.txt","w")
-        sys.stdout = activity_log_file
+        if(generate_activity_log==True):
+            activity_log_file = open("activity_log.txt","w")
+            sys.stdout = activity_log_file
+            current_time = datetime.datetime.now()
+            current_time_str = current_time.strftime("%Y-%m-%d %H:%M")
+            print("==============================================")
+            print("Activity Log generated on ",current_time_str)
+            print("Simulation time = ",T)
+            print("==============================================")
+        else:
+            nothing = open(os.devnull, 'w')
+            sys.stdout = nothing
 
-        current_time = datetime.datetime.now()
-        current_time_str = current_time.strftime("%Y-%m-%d %H:%M")
-        print("==============================================")
-        print("Activity Log generated on ",current_time_str)
-        print("Simulation time = ",T)
-        print("==============================================")
+        # run the simulation
         env.run(until=T)
         sys.stdout = sys.__stdout__
-        print("Activity log generated in file: activity_log.txt")
 
+        if(generate_activity_log==True):
+            print("Activity log generated in file: activity_log.txt")
         
         # Generate results into a string object
         results_string = StringIO()

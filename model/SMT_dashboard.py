@@ -16,6 +16,7 @@ from kivy.uix.textinput  import TextInput
 from kivy.uix.image  import Image
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.checkbox import CheckBox
 from kivy.graphics import Color, Rectangle
 
 # Simulator-related
@@ -63,7 +64,7 @@ Builder.load_string("""
     TabbedPanelItem:
         text: 'Simulation'
         GridLayout:
-            rows:5
+            rows:6
             row_force_default:False
             spacing:10
             padding:10
@@ -74,11 +75,12 @@ Builder.load_string("""
                 height:40
             
             GridLayout:
-                cols:3
+                cols:2
+                rows:2
                 spacing:5
                 padding:5
                 size_hint_y:None
-                height:60
+                height:100
                 
                 Label:
                     text: 'Enter simulation time (in seconds):'
@@ -87,9 +89,24 @@ Builder.load_string("""
                     multiline:False
                     input_type:'number'
                     text:str(app.param_simulation_time_default)
-                Button:
-                    text: 'Run Simulation'
-                    on_press:root.run_simulation()
+                
+                Label:
+                    text: 'Generate detailed activity log:'
+                CheckBox:
+                    id:checkbox_enable_activity_log
+            Button:
+                text: 'Run Simulation'
+                on_press:root.run_simulation()
+                size_hint_y:None
+                height:60
+            Label:
+                id: activity_log
+                text: ""
+                font_size: 15
+                text_size: None, None           
+                size_hint: None, None
+                width: self.texture_size[0]
+                height: self.texture_size[1]
             Splitter:
                 sizable_from: 'top'
                 ScrollView:
@@ -102,19 +119,25 @@ Builder.load_string("""
                         size_hint: None, None
                         width: self.texture_size[0]
                         height: self.texture_size[1]
-    TabbedPanelItem:
-        text: 'Activity Log'
-        ScrollView:
-            text: "Label1"
-            Label:
-                id: activity_log
-                text: "<empty>"
-                font_size: 15
-                text_size: None, None           
-                size_hint: None, None
-                width: self.texture_size[0]
-                height: self.texture_size[1]
-""")
+  """)
+
+# The following code can be used for displaying 
+# a part of the activity log, if required.
+#
+# TabbedPanelItem:
+#       text: 'Activity Log'
+#       ScrollView:
+#           text: "Label1"
+#           Label:
+#               id: activity_log
+#               text: "<empty>"
+#               font_size: 15
+#               text_size: None, None           
+#               size_hint: None, None
+#               width: self.texture_size[0]
+#               height: self.texture_size[1]
+
+
 
 from io import StringIO
 
@@ -201,8 +224,6 @@ class SMT_dashboard(TabbedPanel):
         #add input boxes for setting model parameters:
         self.ids.id_parameter_setup.add_parameters(self.model_parameters)
         
-
-
     def set_parameters(self):
         # read values of the model parameters
         # from the GUI input and save them into the dictionary
@@ -218,24 +239,20 @@ class SMT_dashboard(TabbedPanel):
         print(self.model_parameters)
 
 
-
-
-
     def run_simulation(self):
         # run simulation for the specified amount of time
         simulation_time = int(self.ids.param_simulation_time.text)
         assert(simulation_time>=1 and simulation_time<1e10)
-        results_string = self.simulator.run_simulation(simulation_time)
-        
-        #obtain and display the activity log
-        if(simulation_time > 300):
-            self.ids.activity_log.text = "Activity log generated in file ./activity_log.txt \n\
-            The log is too large to display here."
+        if(self.ids.checkbox_enable_activity_log.active==True):
+            generate_activity_log= True
+            self.ids.activity_log.text = "Activity log generated in file ./activity_log.txt"
         else:
-            with open("activity_log.txt") as f:
-                log = f.read()
-                self.ids.activity_log.text = log
-
+            generate_activity_log= False
+            self.ids.activity_log.text = ""
+        
+        
+        results_string = self.simulator.run_simulation(simulation_time,generate_activity_log)
+        
         #display aggregate results 
         self.ids.simulation_results.text="\nSimulation Results:\n"+ results_string.getvalue()
         pass
